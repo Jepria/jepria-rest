@@ -1,0 +1,199 @@
+<project name="Jep Module Building" default="build">
+  <taskdef resource="net/sf/antcontrib/antlib.xml"/>
+  <property file="local.properties"/>
+  <property environment="env"/>
+  <if>
+    <isset property="env.BIN_HOME"/>
+    <then>
+      <property name="BIN_HOME" value="${env.BIN_HOME}"/>
+    </then>
+  </if>
+  <if>
+    <isset property="BIN_HOME"/>
+    <then>
+      <echo message="Binary repository path: ${BIN_HOME}"/>
+    </then>
+    <else>
+      <fail message="Binary repository path not specified. Specify it either in environment variable %BIN_HOME% or use -DBIN_HOME=... command line argument."/>
+    </else>
+  </if>
+  <property file="dependency.properties"/>
+  <property file="build.properties"/>
+  <property name="MODULE_PACKAGE" value="com/technology/${PROJECT_NAME_IN_PACKAGE}/${MODULE_NAME_IN_PACKAGE}"/>
+  <property name="RESOURCE_HOME" value="src/resources/${MODULE_PACKAGE}"/>
+  <property name="JAVA_DOC_DIR" value="../Doc/App/AutoGen"/>
+
+  <property name="LOG_LEVEL" value="info"/>
+
+  <path id="libs">
+    <pathelement location="${GWT-USER_LIB}"/>
+    <pathelement location="${GWT-DEV_LIB}"/>
+
+    <pathelement location="${LOG4J_LIB}"/>
+    <pathelement location="${COMMONS-FILEUPLOAD_LIB}"/>
+    <pathelement location="${OJDBC6DMS_LIB}"/>
+
+    <pathelement location="${SSO-UTILS_LIB}"/>
+
+    <pathelement location="${OAUTH_SDK}"/>
+
+    <!-- Rest/Jaxrs/Jersey -->
+    <!-- Basic Jersey dependencies, for org.jepria.server.service.rest.jersey.ApplicationConfigBase -->
+    <pathelement location="${JERSEY-JERSEY-SERVER_LIB}"/>
+    <pathelement location="${JERSEY-JAKARTA-WS-RS-API_LIB}"/>
+    <pathelement location="${JERSEY-JERSEY-COMMON_LIB}"/>
+    <!-- JsonBindingProvider feature dependencies, for org.jepria.server.service.rest.gson.JsonBindingProvider -->
+    <pathelement location="${JERSEY-JAKARTA-JSON-BIND-API_LIB}"/>
+    <pathelement location="${GSON_LIB}"/>
+    <!-- Jersey/HK2 dependencies, for org.jepria.server.service.rest.jersey.JepSecurityContextFactory, org.jepria.server.service.rest.jersey.validate.ValidationInterceptionService -->
+    <pathelement location="${JERSEY-HK2-API_LIB}"/>
+    <!-- Javax validation -->
+    <pathelement location="${JERSEY-AOPALLIANCE-REPACKAGED_LIB}"/>
+    <pathelement location="${JERSEY-JAKARTA-INJECT_LIB}"/>
+    <pathelement location="${JERSEY-VALIDATION-API_LIB}"/>
+
+  </path>
+
+  <path id="gwt-libs">
+    <pathelement location="${GWT-USER_LIB}"/>
+    <pathelement location="${GWT-DEV_LIB}"/>
+  </path>
+
+  <fileset id="class-jar" dir="build">
+    <include name="**/*.class"/>
+  </fileset>
+
+  <fileset id="src-jar" dir="src/java">
+    <include name="**/client/**/*.java"/>
+    <include name="**/client/**/*.html"/>
+    <include name="**/client/**/*.css"/>
+    <include name="**/client/**/*.ui.xml"/>
+    <exclude name="**/overview.html"/>
+    <exclude name="**/package.html"/>
+    <include name="**/shared/**/*.java"/>
+    <include name="**/images/*.png"/>
+    <include name="**/images/*.gif"/>
+    <include name="**/${MODULE_NAME}Text.properties"/>
+    <include name="**/${MODULE_NAME}Text_??.properties"/>
+    <include name="**/LoginText.properties"/>
+    <include name="**/LoginText_??.properties"/>
+    <include name="**/${MODULE_NAME}.gwt.xml"/>
+  </fileset>
+
+  <target name="create-version">
+    <input message="Enter target Jepria version name (like 1.0.0):" addproperty="target.version"/>
+    <java classname="org.jepria.versionizer.Main">
+      <arg value="-Dfile.encoding=UTF-8"/>
+      <arg value="--core"/>
+      <arg value=".."/>
+      <arg value="${target.version}"/>
+    </java>
+  </target>
+
+  <!-- Проверка наличия всех используемых библиотек (зависимостей) -->
+  <target name="check-dependencies">
+    <propertyselector
+            property="pack.list"
+            delimiter=","
+            match="([^\s]+(\_(?i)(lib|jslib))$)"
+            select="\1"
+            casesensitive="false"/>
+
+    <echo message="Dependency checking..."/>
+    <for list="${pack.list}" param="lib-path">
+      <sequential>
+        <if>
+          <available file="${@{lib-path}}"/>
+          <then/>
+          <else>
+            <echo>Required library '${@{lib-path}}' is absent</echo>
+            <property name="DEPENDENCY_ABSENCE" value="true"/>
+          </else>
+        </if>
+      </sequential>
+    </for>
+    <if>
+      <equals arg1="${DEPENDENCY_ABSENCE}" arg2="true"/>
+      <then>
+        <echo>Dependency checking failed</echo>
+        <fail message="BINARY REPOSITORY PROBABLY SHOULD BE UPDATED"/>
+      </then>
+    </if>
+    <echo message="Dependency checking succeeded"/>
+  </target>
+
+  <target name="start-log" depends="check-dependencies">
+    <mkdir dir="log"/>
+    <tstamp>
+      <format property="timestamp" pattern="yyyyMMdd_HHmmss"/>
+    </tstamp>
+    <record name="log/${timestamp}-${MODULE_NAME}-${CURRENT_VERSION}-${PROJECT_NAME}.txt" loglevel="${LOG_LEVEL}"/>
+  </target>
+
+  <target name="java-compile">
+    <mkdir dir="build"/>
+    <javac srcdir="src/java" destdir="build" debug="on" encoding="utf-8" includeantruntime="false">
+      <classpath refid="libs"/>
+    </javac>
+  </target>
+
+  <target name="jar-update-check" depends="java-compile">
+    <uptodate targetfile="${DISTR_DIR}/${MODULE_NAME_IN_PACKAGE}-rest-${CURRENT_VERSION}.jar"
+              property="jar-is-uptodate">
+      <srcfiles refid="class-jar"/>
+      <srcfiles refid="src-jar"/>
+    </uptodate>
+  </target>
+
+  <target name="jar" depends="jar-update-check" unless="jar-is-uptodate">
+    <jar destfile="${DISTR_DIR}/${MODULE_NAME_IN_PACKAGE}-rest-${CURRENT_VERSION}.jar">
+      <fileset refid="class-jar"/>
+      <fileset refid="src-jar"/>
+    </jar>
+  </target>
+
+  <target name="build" depends="jar"/>
+
+  <target name="doc" depends="java-compile">
+    <delete includeemptydirs="true" dir="${JAVA_DOC_DIR}"/>
+    <javadoc sourcepath="src/java;auto/java;test/java"
+             locale="ru"
+             packagenames="*"
+             includenosourcepackages="true"
+             overview="src/java/${MODULE_PACKAGE}/overview.html"
+             destdir="${JAVA_DOC_DIR}"
+             encoding="UTF-8"
+             docencoding="UTF-8"
+             charset="UTF-8"
+             access="private"
+             additionalparam="-notimestamp -Xdoclint:none"
+             Windowtitle="${MODULE_NAME} JavaDoc"
+             Doctitle="${MODULE_NAME} API Reference">
+      <classpath refid="libs"/>
+    </javadoc>
+  </target>
+
+  <target name="doc-with-test" depends="java-compile">
+    <javadoc sourcepath="src/java;auto/java"
+             packagenames="*"
+             includenosourcepackages="true"
+             overview="src/java/${MODULE_PACKAGE}/overview.html"
+             destdir="${JAVA_DOC_DIR}"
+             encoding="UTF-8"
+             docencoding="UTF-8"
+             charset="UTF-8"
+             access="private"
+             additionalparam="-notimestamp -Xdoclint:none"
+             Windowtitle="${MODULE_NAME} JavaDoc (with test)"
+             Doctitle="${MODULE_NAME} API Reference (with test)">
+      <classpath refid="libs"/>
+    </javadoc>
+  </target>
+
+  <target name="clean" depends="start-log">
+    <delete includeemptydirs="true" quiet="true">
+      <fileset dir="build"/>
+    </delete>
+    <delete file="${DISTR_DIR}/${MODULE_NAME_IN_PACKAGE}-rest-${CURRENT_VERSION}.jar"/>
+  </target>
+</project>
