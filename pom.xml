@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.jepria.jepria-rest</groupId>
+  <artifactId>jepria-rest</artifactId>
+  <version>12.0.0</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+
+    <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
+    <maven.jar.plugin.version>3.1.0</maven.jar.plugin.version>
+    <maven.dependency.plugin.version>2.8</maven.dependency.plugin.version>
+
+    <jersey.server.version>2.31</jersey.server.version>
+    <jersey.common.version>2.31</jersey.common.version>
+    <jakarta.ws.rs.version>2.1.6</jakarta.ws.rs.version>
+    <jakarta.json.version>1.0.2</jakarta.json.version>
+    <hk2.api.version>2.6.1</hk2.api.version>
+    <aopalliance.repackaged.version>2.6.1</aopalliance.repackaged.version>
+    <jakarta.inject.version>2.6.1</jakarta.inject.version>
+    <validation.api.version>2.0.2</validation.api.version>
+    <gwt.version>2.8.0</gwt.version>
+    <ssoutils.version>1.2.0</ssoutils.version>
+    <commons.fileupload.version>1.2.2</commons.fileupload.version>
+    <log4j.version>1.2.17</log4j.version>
+    <ojdbc6dms.version>11.2.0.4</ojdbc6dms.version>
+    <oauth.sdk.version>1.0.0-SNAPSHOT</oauth.sdk.version>
+    <gson.version>2.8.6</gson.version>
+  </properties>
+
+  <dependencies>
+
+    <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-server -->
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-server</artifactId>
+      <version>${jersey.server.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-common</artifactId>
+      <version>${jersey.common.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/jakarta.ws.rs/jakarta.ws.rs-api -->
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
+      <version>${jakarta.ws.rs.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/jakarta.json.bind/jakarta.json.bind-api -->
+    <dependency>
+      <groupId>jakarta.json.bind</groupId>
+      <artifactId>jakarta.json.bind-api</artifactId>
+      <version>${jakarta.json.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.glassfish.hk2/hk2-api -->
+    <dependency>
+      <groupId>org.glassfish.hk2</groupId>
+      <artifactId>hk2-api</artifactId>
+      <version>${hk2.api.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.glassfish.hk2.external/aopalliance-repackaged -->
+    <dependency>
+      <groupId>org.glassfish.hk2.external</groupId>
+      <artifactId>aopalliance-repackaged</artifactId>
+      <version>${aopalliance.repackaged.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.glassfish.hk2.external/jakarta.inject -->
+    <dependency>
+      <groupId>org.glassfish.hk2.external</groupId>
+      <artifactId>jakarta.inject</artifactId>
+      <version>${jakarta.inject.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api -->
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+      <version>${validation.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+      <version>${validation.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-user</artifactId>
+      <version>${gwt.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-dev</artifactId>
+      <version>${gwt.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jepria</groupId>
+      <artifactId>sso-utils</artifactId>
+      <version>${ssoutils.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-fileupload</groupId>
+      <artifactId>commons-fileupload</artifactId>
+      <version>${commons.fileupload.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>${log4j.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.oracle</groupId>
+      <artifactId>ojdbc6dms</artifactId>
+      <version>${ojdbc6dms.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jepria</groupId>
+      <artifactId>oauth-sdk</artifactId>
+      <version>${oauth.sdk.version}</version>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven.compiler.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${maven.jar.plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>${maven.dependency.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>install</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>${project.groupId}</groupId>
+                  <artifactId>${project.artifactId}</artifactId>
+                  <version>${project.version}</version>
+                  <type>${project.packaging}</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>
+                    ${env.BIN_HOME}/deploy/org/jepria/${project.artifactId}/${project.version}
+                  </outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
