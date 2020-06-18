@@ -23,6 +23,6 @@ jobs:
     - name: maven-settings-xml-action
       uses: whelk-io/maven-settings-xml-action@v7
       with:
-        repositories: '[{ "id": "bin-repo-build", "name": "jepria-bin-repo-build", "url": "https://github.com/Jepria/bin-repo/tree/master/build" }, { "id": "bin-repo-deploy", "name": "jepria-bin-repo-deploy", "url": "https://github.com/Jepria/bin-repo/tree/master/deploy" }]'
+        repositories: '[{ "id": "bin-repo-build", "name": "jepria-bin-repo-build", "url": "https://raw.githubusercontent.com/Jepria/bin-repo/master/build" }, { "id": "bin-repo-deploy", "name": "jepria-bin-repo-deploy", "url": "https://raw.githubusercontent.com/Jepria/bin-repo/master/deploy" }]'
     - name: Build with Maven
       run: mvn -B package --file pom.xml
