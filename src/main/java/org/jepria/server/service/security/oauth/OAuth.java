@@ -1,4 +1,4 @@
-package org.jepria.server.service.security;
+package org.jepria.server.service.security.oauth;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

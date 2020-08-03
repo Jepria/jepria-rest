@@ -1,12 +1,14 @@
-package org.jepria.server.service.security;
+package org.jepria.server.service.security.oauth;
 
 import org.jepria.compat.server.db.Db;
 import oracle.jdbc.OracleTypes;
 import org.glassfish.jersey.server.model.AnnotatedMethod;
 import org.jepria.oauth.sdk.TokenInfoResponse;
 import org.jepria.oauth.sdk.jaxrs.OAuthContainerRequestFilter;
+import org.jepria.server.data.RuntimeSQLException;
 import org.jepria.server.env.EnvironmentPropertySupport;
 import org.jepria.server.service.rest.MetaInfoResource;
+import org.jepria.server.service.security.PrincipalImpl;
 
 import javax.annotation.Priority;
 import javax.servlet.http.HttpServletRequest;
@@ -21,6 +23,10 @@ import java.io.IOException;
 import java.security.Principal;
 import java.sql.CallableStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static org.jepria.compat.server.JepRiaServerConstant.DEFAULT_DATA_SOURCE_JNDI_NAME;
 import static org.jepria.oauth.sdk.OAuthConstants.CLIENT_ID_PROPERTY;
@@ -58,7 +64,6 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
   public static class JepOAuthContainerRequestFilter extends OAuthContainerRequestFilter {
 
     public static final String AUTHENTICATION_SCHEME = "BEARER";
-    private String moduleName;
     HttpServletRequest request;
 
     public JepOAuthContainerRequestFilter(@Context HttpServletRequest request) {
@@ -68,27 +73,37 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
     @Override
     protected SecurityContext getSecurityContext(TokenInfoResponse tokenInfo) {
       String[] credentials = tokenInfo.getSub().split(":");
-      return new SecurityContext(credentials[0], Integer.valueOf(credentials[1]));
+      return new SecurityContext(request, credentials[0], Integer.valueOf(credentials[1]));
     }
 
-//    @Override
+    @Override
     protected HttpServletRequest getRequest() {
       return request;
     }
 
     @Override
     protected String getClientSecret() {
-      return EnvironmentPropertySupport.getInstance(request).getProperty(moduleName + "/" + CLIENT_ID_PROPERTY);
+      String clientSecret = (String) request.getSession().getAttribute(CLIENT_SECRET_PROPERTY);
+      if (clientSecret == null) {
+        Db db = new Db(DEFAULT_DATA_SOURCE_JNDI_NAME);
+        try {
+          clientSecret = OAuthDbHelper.getClientSecret(db, getClientId());
+        } catch (SQLException ex) {
+          ex.printStackTrace();
+          throw new RuntimeSQLException(ex);
+        }
+      }
+      request.getSession().setAttribute(CLIENT_SECRET_PROPERTY, clientSecret);
+      return clientSecret;
     }
 
     @Override
     protected String getClientId() {
-      return EnvironmentPropertySupport.getInstance(request).getProperty(moduleName + "/" + CLIENT_SECRET_PROPERTY);
+      return request.getServletContext().getInitParameter(CLIENT_ID_PROPERTY);
     }
 
     @Override
     public void filter(ContainerRequestContext containerRequestContext) throws IOException {
-      moduleName = request.getServletContext().getContextPath().replaceFirst("/", "");
       super.filter(containerRequestContext);
     }
   }
@@ -98,41 +113,53 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
     private Db getDb() {
       return new Db(DEFAULT_DATA_SOURCE_JNDI_NAME);
     }
-
+    private final String USER_ROLES = "USER_ROLES";
     private final String username;
     private final Integer operatorId;
+    private HttpServletRequest request;
 
-    public SecurityContext(String username, Integer operatorId) {
+    public SecurityContext(HttpServletRequest request, String username, Integer operatorId) {
+      this.request = request;
       this.username = username;
       this.operatorId = operatorId;
     }
 
+    private void cacheRoles(Map roles) {
+      request.getSession().setAttribute(USER_ROLES, roles);
+    }
+    
     @Override
     public boolean isUserInRole(final String roleName) {
-      //language=Oracle
-      String sqlQuery =
-        "begin ? := pkg_operator.isrole(" +
-          "operatorid => ?, " +
-          "roleshortname => ?" +
-          "); " +
-          "end;";
-      Db db = getDb();
-      Integer result = null;
-      try {
-        CallableStatement callableStatement = db.prepare(sqlQuery);
-        callableStatement.registerOutParameter(1, OracleTypes.INTEGER);
-        callableStatement.setInt(2, operatorId);
-        callableStatement.setString(3, roleName);
-        callableStatement.execute();
-        result = new Integer(callableStatement.getInt(1));
-        if(callableStatement.wasNull()) result = null;
-      } catch (SQLException e) {
-        e.printStackTrace();
-      } finally {
-        db.closeAll();
+      Map<String, Boolean> roles = request.getSession().getAttribute(USER_ROLES) != null ?
+        (Map<String, Boolean>) request.getSession().getAttribute(USER_ROLES) : new HashMap<>();
+      if (roles.isEmpty() || !roles.containsKey(roleName)) {
+        String sqlQuery =
+          "begin ? := pkg_operator.isrole(" +
+            "operatorid => ?, " +
+            "roleshortname => ?" +
+            "); " +
+            "end;";
+        Db db = getDb();
+        Integer result = null;
+        try {
+          CallableStatement callableStatement = db.prepare(sqlQuery);
+          callableStatement.registerOutParameter(1, OracleTypes.INTEGER);
+          callableStatement.setInt(2, operatorId);
+          callableStatement.setString(3, roleName);
+          callableStatement.execute();
+          result = new Integer(callableStatement.getInt(1));
+          if(callableStatement.wasNull()) result = null;
+        } catch (SQLException e) {
+          e.printStackTrace();
+        } finally {
+          db.closeAll();
+        }
+        roles.putIfAbsent(roleName, result == 1);
+        cacheRoles(roles);
+        return result == 1;
+      } else {
+        return roles.get(roleName);
       }
-
-      return result != null && result.intValue() == 1;
     }
 
     @Override
@@ -147,7 +174,7 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
 
     @Override
     public boolean isSecure() {
-      return false;
+      return request.isSecure();
     }
   }
 }
