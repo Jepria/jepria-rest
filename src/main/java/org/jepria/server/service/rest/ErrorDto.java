@@ -4,15 +4,15 @@ package org.jepria.server.service.rest;
  * Класс для представления деталей серверной ошибки типа Internal Server Error (HTTP-статус 500) клиенту
  */
 public class ErrorDto {
-  private int errorCode;
+  private Integer errorCode;
   private String errorMessage;
   private String errorId;
 
-  public int getErrorCode() {
+  public Integer getErrorCode() {
     return errorCode;
   }
 
-  public void setErrorCode(int errorCode) {
+  public void setErrorCode(Integer errorCode) {
     this.errorCode = errorCode;
   }
 

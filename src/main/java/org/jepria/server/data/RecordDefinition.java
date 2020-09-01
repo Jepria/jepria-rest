@@ -98,8 +98,9 @@ public interface RecordDefinition {
    * @param delimiter between key=value pairs
    * @return
    * @throws RecordDefinition.IncompletePrimaryKeyException
+   * @throws IllegalArgumentException if 'key=value' pair syntax of the input is wrong
    */
-  default Map<String, Object> parseRecordId(String recordId, String delimiter) throws IncompletePrimaryKeyException {
+  default Map<String, Object> parseRecordId(String recordId, String delimiter) throws IncompletePrimaryKeyException, IllegalArgumentException {
     Map<String, Object> ret = new HashMap<>();
   
     if (recordId != null) {
