@@ -116,7 +116,7 @@ public interface RecordDefinition {
           throw new IllegalArgumentException("Could not determine type for the field '" + fieldName + "'");
         }
 
-        final Object fieldValue = RecordIdParser.getTypedValue(fieldName, type);
+        final Object fieldValue = RecordIdParser.getTypedValue(recordId, type);
       
         ret.put(fieldName, fieldValue);
       
