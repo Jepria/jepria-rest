@@ -1,5 +1,6 @@
 package org.jepria.server.service.security.oauth;
 
+import oracle.jdbc.OracleTypes;
 import org.jepria.compat.server.db.Db;
 import org.jepria.server.data.RuntimeSQLException;
 
@@ -27,10 +28,14 @@ public class OAuthDbHelper {
     String result = null;
     CallableStatement cs = db.prepare(sqlQuery);
     try {
-      cs.setString(1, clientId);
-      ResultSet rs = cs.executeQuery();
-      if (rs.next()) {
-        result = rs.getString(CLIENT_SECRET);
+      cs.registerOutParameter(1, OracleTypes.CURSOR);
+      cs.setString(2, clientId);
+      cs.executeQuery();
+
+      //Получим набор.
+      ResultSet resultSet = (ResultSet) cs.getObject(1);
+      if (resultSet.next()) {
+        result = resultSet.getString(CLIENT_SECRET);
       }
     } catch (SQLException ex) {
       throw new RuntimeSQLException(ex);
