@@ -18,6 +18,10 @@ public class DateParamConverter implements ParamConverter<Date> {
   @Override
   public Date fromString(String s) {
 
+    if (s == null) {
+      return null;
+    }
+    
     final String format;
 
     if (customDateFormat != null) {
