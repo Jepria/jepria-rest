@@ -1,7 +1,5 @@
-package org.jepria.server.service.rest.jersey;
+package org.jepria.server.service.rest;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ParamConverter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -18,6 +16,10 @@ public class DateParamConverter implements ParamConverter<Date> {
   @Override
   public Date fromString(String s) {
 
+    if (s == null) {
+      return null;
+    }
+
     final String format;
 
     if (customDateFormat != null) {
@@ -31,8 +33,11 @@ public class DateParamConverter implements ParamConverter<Date> {
     try {
       return simpleDateFormat.parse(s);
     } catch (ParseException e) {
-      throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Incorrect date or date-time format: expected [" + format + "], actual [" + s + "]").build(),
+      throw new BadParamException(
+              null,
+              null,
+              s,
+              "Incorrect date or date-time format: expected [" + format + "], actual [" + s + "]",
               e);
     }
   }
