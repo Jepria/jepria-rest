@@ -1,4 +1,4 @@
-package org.jepria.server.service.rest.jersey;
+package org.jepria.server.service.rest;
 
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
