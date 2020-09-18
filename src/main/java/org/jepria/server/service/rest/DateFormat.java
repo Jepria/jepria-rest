@@ -1,4 +1,4 @@
-package org.jepria.server.service.rest.jersey;
+package org.jepria.server.service.rest;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

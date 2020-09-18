@@ -3,6 +3,7 @@ package org.jepria.server.service.rest.jersey;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.glassfish.jersey.spi.ExceptionMappers;
+import org.jepria.server.service.rest.DateParamConverterProvider;
 import org.jepria.server.service.rest.ErrorDto;
 import org.jepria.server.service.rest.MetaInfoResource;
 import org.jepria.server.service.rest.XCacheControlFilter;
