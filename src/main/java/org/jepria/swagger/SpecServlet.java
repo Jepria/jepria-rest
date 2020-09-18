@@ -71,7 +71,11 @@ import java.util.*;
  *  </li>
  *  <li>
  *    Для динамического определения сервера (части url), по которому swagger делает рантайм-обращения к собственно API из интерфейса,
- *    необходимо указать шаблонное значение {@code /{appContextPath}/{apiEndpoint}} поля {@code /servers/url} в spec-ресурсе swagger.json.
+ *    можно указывать следующие параметры (или их комбинации) в поле {@code /servers/url} в spec-ресурсе swagger.json:
+ *    <code>/{appContextPath}</code> и <code>/{apiEndpoint}</code>.
+ *    <br/>
+ *    Например, <code>"url": "/{appContextPath}/{apiEndpoint}/v1"</code>.
+ *    <br/>
  *    При указании иного значения, в качестве сервера будет использовано собственно значение (например, {@code /application/api}).
  *  </li>
  *  <li>
@@ -194,9 +198,9 @@ public class SpecServlet extends HttpServlet {
         for (Map<String, Object> serverObject : serversObject) {
           if (serverObject != null) {
             String url = (String) serverObject.get("url");
-            if ("/{appContextPath}/{apiEndpoint}".equals(url)) {
-              serverObject.put("url", req.getContextPath() + apiServletPath);
-            }
+            url = url.replaceAll("/\\{appContextPath}", req.getContextPath())
+                    .replaceAll("/\\{apiEndpoint}", apiServletPath);
+            serverObject.put("url", url);
           }
         }
       } else {

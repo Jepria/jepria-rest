@@ -8,8 +8,9 @@ import org.jepria.server.service.rest.MetaInfoResource;
 import org.jepria.server.service.rest.XCacheControlFilter;
 import org.jepria.server.service.rest.gson.JsonBindingProvider;
 import org.jepria.server.service.rest.jersey.validate.ExceptionMapperValidation;
-import org.jepria.server.service.security.JaxrsCorsFilter;
 import org.jepria.server.service.security.HttpBasicDynamicFeature;
+import org.jepria.server.service.security.JaxrsCorsFilter;
+
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.json.bind.JsonbException;
@@ -59,6 +60,8 @@ public class ApplicationConfigBase extends ResourceConfig {
     registerExceptionMapperValidation();
     
     registerCorsHandler();
+
+    registerDateParamConverter();
   }
   
   /**
@@ -187,5 +190,9 @@ public class ApplicationConfigBase extends ResourceConfig {
    */
   protected void registerCorsHandler() {
     register(JaxrsCorsFilter.class);
+  }
+
+  protected void registerDateParamConverter() {
+    register(DateParamConverterProvider.class);
   }
 }
