@@ -348,12 +348,11 @@ public class JaxrsAdapterBase {
     }
 
     public int getSearchResultsetSize(String searchId, String cacheControl) {
-
-      invalidateResultsetOnNoCache(searchId, cacheControl);
-
+      
       final int result;
 
       try {
+        invalidateResultsetOnNoCache(searchId, cacheControl);
         result = searchService.get().getResultsetSize(searchId, securityContext.getCredential());
       } catch (NoSuchElementException e) {
         throw new NotFoundException(e);
@@ -401,11 +400,11 @@ public class JaxrsAdapterBase {
      */
     protected List<?> getResultset(String searchId, String cacheControl) {
 
-      invalidateResultsetOnNoCache(searchId, cacheControl);
 
       final List<?> records;
 
       try {
+        invalidateResultsetOnNoCache(searchId, cacheControl);
         records = searchService.get().getResultset(searchId, securityContext.getCredential());
       } catch (NoSuchElementException e) {
         // 404
