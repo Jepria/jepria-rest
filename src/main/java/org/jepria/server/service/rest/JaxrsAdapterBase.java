@@ -341,19 +341,18 @@ public class JaxrsAdapterBase {
      * @param searchId
      * @param cacheControl Cache-Control header value
      */
-    protected void invalidateResultsetOnNoCache(String searchId, String cacheControl) {
+    protected void invalidateResultsetOnNoCache(String searchId, String cacheControl) throws NoSuchElementException {
       if ("no-cache".equals(cacheControl)) {
         searchService.get().invalidateResultset(searchId);
       }
     }
 
     public int getSearchResultsetSize(String searchId, String cacheControl) {
-
-      invalidateResultsetOnNoCache(searchId, cacheControl);
-
+      
       final int result;
 
       try {
+        invalidateResultsetOnNoCache(searchId, cacheControl);
         result = searchService.get().getResultsetSize(searchId, securityContext.getCredential());
       } catch (NoSuchElementException e) {
         throw new NotFoundException(e);
@@ -401,11 +400,11 @@ public class JaxrsAdapterBase {
      */
     protected List<?> getResultset(String searchId, String cacheControl) {
 
-      invalidateResultsetOnNoCache(searchId, cacheControl);
 
       final List<?> records;
 
       try {
+        invalidateResultsetOnNoCache(searchId, cacheControl);
         records = searchService.get().getResultset(searchId, securityContext.getCredential());
       } catch (NoSuchElementException e) {
         // 404
@@ -441,12 +440,11 @@ public class JaxrsAdapterBase {
       // normalize paging parameters
       pageSize = pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
       page = page == null ? 1 : page;
-
-      invalidateResultsetOnNoCache(searchId, cacheControl);
-
+      
       final List<?> records;
 
       try {
+        invalidateResultsetOnNoCache(searchId, cacheControl);
         records = searchService.get().getResultsetPaged(searchId, pageSize, page, securityContext.getCredential());
       } catch (NoSuchElementException e) {
         // 404
