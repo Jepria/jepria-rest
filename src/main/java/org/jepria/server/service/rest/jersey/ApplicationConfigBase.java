@@ -11,6 +11,8 @@ import org.jepria.server.service.rest.gson.JsonBindingProvider;
 import org.jepria.server.service.rest.jersey.validate.ExceptionMapperValidation;
 import org.jepria.server.service.security.HttpBasicDynamicFeature;
 import org.jepria.server.service.security.JaxrsCorsFilter;
+import org.jepria.server.service.security.oauth.JepOAuthDynamicFeature;
+import org.jepria.server.service.security.protection.ProtectedDynamicFeature;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -63,6 +65,10 @@ public class ApplicationConfigBase extends ResourceConfig {
     registerCorsHandler();
 
     registerDateParamConverter();
+
+    registerOAuthDynamicFeature();
+
+    registerProtectedDynamicFeature();
   }
   
   /**
@@ -195,5 +201,17 @@ public class ApplicationConfigBase extends ResourceConfig {
 
   protected void registerDateParamConverter() {
     register(DateParamConverterProvider.class);
+  }
+
+  protected void registerOAuthDynamicFeature() {
+    register(JepOAuthDynamicFeature.class);
+  }
+
+  /**
+   * register @Protected annotation
+   *
+   */
+  protected void registerProtectedDynamicFeature() {
+    register(ProtectedDynamicFeature.class);
   }
 }

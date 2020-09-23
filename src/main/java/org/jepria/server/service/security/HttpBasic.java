@@ -13,6 +13,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface HttpBasic {
+  String ANY = "any";
   String PASSWORD = "password";
   String PASSWORD_HASH = "passwordHash";
   String passwordType();

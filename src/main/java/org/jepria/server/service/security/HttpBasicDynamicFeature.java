@@ -1,9 +1,8 @@
 package org.jepria.server.service.security;
 
-import org.jepria.compat.server.db.Db;
 import oracle.jdbc.OracleTypes;
 import org.glassfish.jersey.server.model.AnnotatedMethod;
-import org.jepria.server.service.rest.MetaInfoResource;
+import org.jepria.compat.server.db.Db;
 
 import javax.annotation.Priority;
 import javax.servlet.http.HttpServletRequest;
@@ -33,37 +32,27 @@ import static org.jepria.server.service.security.HttpBasic.PASSWORD_HASH;
  */
 public class HttpBasicDynamicFeature implements DynamicFeature {
 
-  protected Db getDb() {
-    return new Db(DEFAULT_DATA_SOURCE_JNDI_NAME);
-  }
-
   @Override
   public void configure(ResourceInfo resourceInfo, FeatureContext context) {
     final AnnotatedMethod am = new AnnotatedMethod(resourceInfo.getResourceMethod());
     // HttpBasic annotation on the method
     HttpBasic resourceAnnotation = resourceInfo.getResourceClass().getAnnotation(HttpBasic.class);
     HttpBasic methodAnnotation = am.getAnnotation(HttpBasic.class);
-    if (resourceAnnotation != null) {
-      context.register(new HttpBasicContainerRequestFilter(resourceAnnotation.passwordType()));
-      return;
-    } else if (methodAnnotation != null) {
+    if (methodAnnotation != null) {
       context.register(new HttpBasicContainerRequestFilter(methodAnnotation.passwordType()));
       return;
-    } else if (MetaInfoResource.class.equals(resourceInfo.getResourceClass())) {
-      // регистрируем фильтр для ресурса MetaInfoResource так, как будто на нём есть аннотация @HttpBasic
-
-      // TODO
-      // создать аннотацию вроде @Protected, которая будет работать аналогично аннотации @HttpBasic, с той лишь разницей, что
-      // @Protected не зависит от метода аутентификации (HttpBasic, OAuth и т.д.).
-      // @Protected просто говорит о том, что ресурс защищён (неважно каким образом).
-      // Далее ресурс MetaInfoResource можно пометить такой аннотацией и убрать его регистрацию отсюда
-
-      context.register(new HttpBasicContainerRequestFilter(PASSWORD));
+    } else if (resourceAnnotation != null) {
+      context.register(new HttpBasicContainerRequestFilter(resourceAnnotation.passwordType()));
+      return;
     }
   }
 
   @Priority(Priorities.AUTHENTICATION)
-  public final class HttpBasicContainerRequestFilter  implements ContainerRequestFilter {
+  public static final class HttpBasicContainerRequestFilter  implements ContainerRequestFilter {
+
+    protected Db getDb() {
+      return new Db(DEFAULT_DATA_SOURCE_JNDI_NAME);
+    }
 
     @Context
     HttpServletRequest request;
@@ -88,7 +77,7 @@ public class HttpBasicDynamicFeature implements DynamicFeature {
       String[] credentials = new String(Base64.getDecoder().decode(authString)).split(":");
       Db db = getDb();
       try {
-        Integer operatorId = null;
+        Integer operatorId;
         if (PASSWORD.equals(passwordType)) {
           operatorId = pkg_Operator.logon(db, credentials[0], credentials[1], null);
         } else {

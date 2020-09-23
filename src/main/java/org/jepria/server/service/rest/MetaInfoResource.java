@@ -1,6 +1,7 @@
 package org.jepria.server.service.rest;
 
 import org.jepria.server.service.rest.gson.JsonConfig;
+import org.jepria.server.service.security.protection.Protected;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
