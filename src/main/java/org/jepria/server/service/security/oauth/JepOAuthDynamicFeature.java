@@ -116,7 +116,7 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
               "); " +
               "end;";
       Db db = getDb();
-      Integer result = null;
+      int result = 0;
       try {
         CallableStatement callableStatement = db.prepare(sqlQuery);
         callableStatement.registerOutParameter(1, OracleTypes.INTEGER);
@@ -124,7 +124,7 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
         callableStatement.setString(3, roleName);
         callableStatement.execute();
         result = new Integer(callableStatement.getInt(1));
-        if (callableStatement.wasNull()) result = null;
+        if (callableStatement.wasNull()) result = 0;
       } catch (SQLException e) {
         e.printStackTrace();
       } finally {
