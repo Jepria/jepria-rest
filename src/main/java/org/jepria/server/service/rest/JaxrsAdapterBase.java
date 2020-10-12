@@ -10,6 +10,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.Serializable;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Supplier;
@@ -126,7 +127,7 @@ public class JaxrsAdapterBase {
       return response;
     }
 
-    protected class SearchRequestImpl implements SearchService.SearchRequest {
+    protected class SearchRequestImpl implements SearchService.SearchRequest, Serializable {
 
       protected final Object templateDto;
       protected final String templateToken;

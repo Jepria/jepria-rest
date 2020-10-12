@@ -20,7 +20,7 @@ public interface SearchService {
   /**
    * Интерфейс клиентского поискового запроса для использования внутри сервиса (internal representation)
    */
-  public interface SearchRequest {
+  interface SearchRequest {
 
     /**
      * @return оригинальный поисковый шаблон
