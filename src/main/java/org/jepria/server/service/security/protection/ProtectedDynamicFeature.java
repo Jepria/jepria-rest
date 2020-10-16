@@ -75,7 +75,7 @@ public class ProtectedDynamicFeature implements DynamicFeature {
         containerRequestContext.abortWith(Response.status((Response.Status.UNAUTHORIZED)).build());
       } else if (authString.startsWith("Basic") || authString.startsWith("basic")) {
         httpBasicContainerRequestFilter.filter(containerRequestContext);
-      } else if (authString.startsWith("Bearer") || authString.startsWith("Bearer")) {
+      } else if (authString.startsWith("Bearer") || authString.startsWith("bearer")) {
         OAuthContainerRequestFilter.filter(containerRequestContext);
       } else {
         containerRequestContext.abortWith(Response.status((Response.Status.UNAUTHORIZED)).build());
