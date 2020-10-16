@@ -15,6 +15,11 @@ public class JepRiaServerConstant extends JepRiaConstant {
    */
   public static final String DEFAULT_DATA_SOURCE_JNDI_NAME = "jdbc/RFInfoDS";
   /**
+   * JNDI-имя источника данных модуля OAuth.
+   */
+  public static final String DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME = "jdbc/OAuthDS";
+  public static final String BACK_UP_DATA_SOURCE = "OAUTH_BACKUP_DATASOURCE";
+  /**
    * Имя параметра http-запроса: язык текущей межмодульной сессии
    */
   public static final String HTTP_REQUEST_PARAMETER_LANG = "lang";
