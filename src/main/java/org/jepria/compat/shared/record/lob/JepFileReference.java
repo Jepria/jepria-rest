@@ -1,13 +1,13 @@
 package org.jepria.compat.shared.record.lob;
 
-import com.google.gwt.regexp.shared.MatchResult;
-import com.google.gwt.regexp.shared.RegExp;
-import com.google.gwt.user.client.rpc.IsSerializable;
+import java.io.Serializable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Ссылка на *_LOB-поле, идентифицирующая его в пределах таблицы БД.
  */
-public class JepFileReference<T> implements IsSerializable {
+public class JepFileReference<T> implements Serializable {
   
   /**
    * Свойство для хранения имени файла
@@ -42,8 +42,7 @@ public class JepFileReference<T> implements IsSerializable {
    * @param key        значение ключа
    * @param fileExtension    расширение файла
    * @param mimeType      mime-type файла
-   * 
-   * @throws выбрасывается исключение, если значение ключа отличается от строкового 
+   *
    * или числового
    */
   public JepFileReference(
@@ -64,8 +63,7 @@ public class JepFileReference<T> implements IsSerializable {
    * @param key        значение ключа
    * @param fileExtension    расширение файла
    * @param mimeType      mime-type файла
-   * 
-   * @throws выбрасывается исключение, если значение ключа отличается от строкового 
+   *
    * или числового
    */
   @SuppressWarnings("unchecked")
@@ -107,7 +105,7 @@ public class JepFileReference<T> implements IsSerializable {
    *   ...
    * </pre>
    *
-   * @param value объект (обычно поле записи {@link org.jepria.compat.shared.record.JepRecord}), из которого необходимо получить
+   * @param value объект (обычно поле запис, из которого необходимо получить
    * имя файла
    * @return имя файла
    */
@@ -144,7 +142,7 @@ public class JepFileReference<T> implements IsSerializable {
    *   ...
    * </pre>
    *
-   * @param value объект (обычно поле записи {@link org.jepria.compat.shared.record.JepRecord}), из которого необходимо получить
+   * @param value объект (обычно поле записи, из которого необходимо получить
    * расширение имени файла
    * @return расширение имени файла
    */
@@ -163,9 +161,9 @@ public class JepFileReference<T> implements IsSerializable {
    * @param fileName Имя файла
    */
   public static String detectFileExtension(String fileName) {
-    RegExp fileExtensionExp = RegExp.compile("\\.([a-z0-9]+)$", "i");
-    MatchResult fileExtensionMatch = fileExtensionExp.exec(fileName);
-    return fileExtensionMatch.getGroup(1);
+    Pattern fileExtensionExp = Pattern.compile("\\.([a-z0-9]+)$", Pattern.CASE_INSENSITIVE);
+    Matcher fileExtensionMatch = fileExtensionExp.matcher(fileName);
+    return fileExtensionMatch.group(1);
   }
   
   public void setFileExtension(String fileExtension) {
@@ -187,7 +185,7 @@ public class JepFileReference<T> implements IsSerializable {
    *   ...
    * </pre>
    *
-   * @param value объект (обычно поле записи {@link org.jepria.compat.shared.record.JepRecord}), из которого необходимо получить
+   * @param value объект (обычно поле записи, из которого необходимо получить
    * MIME-тип файла
    * @return MIME-тип файла
    */

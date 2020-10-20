@@ -7,6 +7,8 @@ import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.dao.DaoSupport;
@@ -29,15 +31,17 @@ public class BinaryLargeObject extends LargeObject {
    * 
    * @param tableName имя таблицы, в которую выполняется запись
    * @param fileFieldName имя поля, в которую выполняется запись
-   * @param keyFieldName имя поля, идентифицирующего строку таблицы
-   * @param rowId идентификатор строки таблицы
+   * @param primaryKey имя поля, идентифицирующего строку таблицы
+   * @param rowIds идентификатор строки таблицы
    */
-  public BinaryLargeObject(String tableName, String fileFieldName, String keyFieldName, Object rowId) {
-    super(tableName, fileFieldName, keyFieldName, rowId);
+  public BinaryLargeObject(String tableName, String fileFieldName, List<String> primaryKey, List<Object> rowIds) {
+    super(tableName, fileFieldName, primaryKey, rowIds);
 
-    rowId = String.class.isInstance(rowId) ? "'" + rowId + "'" : rowId;
-    
-    super.sqlClearLob = "update " + tableName + " set " + fileFieldName + "=empty_blob() where " + keyFieldName + "=" + rowId;
+    rowIds = rowIds.stream().map(rowId -> String.class.isInstance(rowId) ? "'" + rowId + "'" : rowId).collect(Collectors.toList());
+
+    String queryString = buildSqlString(primaryKey, rowIds);
+
+    super.sqlClearLob = "update " + tableName + " set " + fileFieldName + "=empty_blob() where " + queryString;
   }
 
   /**
@@ -63,7 +67,7 @@ public class BinaryLargeObject extends LargeObject {
             output = blob.setBinaryStream(0);
             result = WRITE_LENGTH;
       } else {
-        throw new ApplicationException("Record of table '" + tableName + "' with id '" + keyFieldName + "' was not found", null);
+        throw new ApplicationException("Record of table '" + tableName + "' with id '" + primaryKey + "' was not found", null);
       }
       return result;
     } catch (SQLException ex) {
@@ -93,7 +97,7 @@ public class BinaryLargeObject extends LargeObject {
             input = blob.getBinaryStream();
             result = WRITE_LENGTH;
       } else {
-        throw new ApplicationException("Record of table '" + tableName + "' with id '" + keyFieldName + "' was not found", null);
+        throw new ApplicationException("Record of table '" + tableName + "' with id '" + primaryKey + "' was not found", null);
       }
       return result;
     } catch (SQLException ex) {

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * <pre>
@@ -110,7 +111,7 @@ public class FileDownloadStream extends InputStream {
    * @param fileDownload      интерфейс выгрузки файла
    * @param tableName         имя таблицы, откуда берем BINARY_FILE
    * @param fileFieldName      имя атрибута в таблице, откуда берем BINARY_FILE
-   * @param keyFieldName      PK в таблице tableName
+   * @param primaryKey      PK в таблице tableName
    * @param rowId         идентификатор строки таблицы
    * @param dataSourceJndiName   имя источника данных
    * @throws IOException
@@ -120,8 +121,8 @@ public class FileDownloadStream extends InputStream {
       , FileDownload fileDownload
       , String tableName
       , String fileFieldName
-      , String keyFieldName
-      , Object rowId
+      , List<String> primaryKey
+      , List<Object> rowId
       , String dataSourceJndiName
       , String moduleName
       , final boolean transactionable)
@@ -139,7 +140,7 @@ public class FileDownloadStream extends InputStream {
       final int WRITE_LENGTH = fileDownload.beginRead(
           tableName
           , fileFieldName
-          , keyFieldName
+          , primaryKey
           , rowId
           );
       readStream = new FileDownloadStream((BinaryFileDownload)fileDownload);

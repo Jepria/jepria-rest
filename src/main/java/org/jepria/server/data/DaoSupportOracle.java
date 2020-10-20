@@ -115,7 +115,7 @@ public class DaoSupportOracle implements DaoSupport {
   }
 
   @Override
-  public void deleteClob(String tableName, String dataFieldName, String whereClause) {
+  public void deleteClob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues) {
     // TODO stub implementation
 
     final Reader emptyReader = new Reader() {
@@ -128,11 +128,11 @@ public class DaoSupportOracle implements DaoSupport {
       }
     };
 
-    uploadClob(tableName, dataFieldName, whereClause, emptyReader);
+    uploadClob(tableName, dataFieldName, primaryKey, primaryKeyValues, emptyReader);
   }
 
   @Override
-  public void uploadClob(String tableName, String dataFieldName, String whereClause, Reader reader) {
+  public void uploadClob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues, Reader reader) {
     // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
     try {
       FileUploadWriter.uploadFile(
@@ -140,7 +140,7 @@ public class DaoSupportOracle implements DaoSupport {
               , new TextFileUploadImpl()
               , tableName
               , dataFieldName
-              , whereClause + " and " + 1, 1 // internally transformed to "where [whereClause] and 1=1"
+              , primaryKey, primaryKeyValues // internally transformed to "where [whereClause] and 1=1"
               , null
               , null
               , false
@@ -151,7 +151,7 @@ public class DaoSupportOracle implements DaoSupport {
   }
 
   @Override
-  public void deleteBlob(String tableName, String dataFieldName, String whereClause) {
+  public void deleteBlob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues) {
     // TODO stub implementation
 
     final InputStream emptyStream = new InputStream() {
@@ -161,11 +161,11 @@ public class DaoSupportOracle implements DaoSupport {
       }
     };
 
-    uploadBlob(tableName, dataFieldName, whereClause, emptyStream);
+    uploadBlob(tableName, dataFieldName, primaryKey, primaryKeyValues, emptyStream);
   }
 
   @Override
-  public void uploadBlob(String tableName, String dataFieldName, String whereClause, InputStream stream) {
+  public void uploadBlob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues, InputStream stream) {
     // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
     try {
       FileUploadStream.uploadFile(
@@ -173,7 +173,7 @@ public class DaoSupportOracle implements DaoSupport {
               , new BinaryFileUploadImpl() // transaction logic is performed by org.jepria.compat.server.dao.transaction.TransactionFactory.TransactionInvocationHandler Dao wrapper
               , tableName
               , dataFieldName
-              , whereClause + " and " + 1, 1 // internally transformed to "where [whereClause] and 1=1"
+              , primaryKey, primaryKeyValues // internally transformed to "where [whereClause] and 1=1"
               , null
               , null
               , false
@@ -184,7 +184,7 @@ public class DaoSupportOracle implements DaoSupport {
   }
 
   @Override
-  public void downloadClob(String tableName, String dataFieldName, String whereClause, Writer writer) {
+  public void downloadClob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues, Writer writer) {
     // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
     try {
       FileDownloadReader.downloadFile(
@@ -192,7 +192,7 @@ public class DaoSupportOracle implements DaoSupport {
               , new TextFileDownloadImpl()
               , tableName
               , dataFieldName
-              , " ( " + whereClause + " ) and " + 1, 1 // internally transformed to "where ( [whereClause] ) and 1=1"
+              , primaryKey, primaryKeyValues
               , null
               , null
               , false);
@@ -202,7 +202,7 @@ public class DaoSupportOracle implements DaoSupport {
   }
 
   @Override
-  public void downloadBlob(String tableName, String dataFieldName, String whereClause, OutputStream stream) {
+  public void downloadBlob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues, OutputStream stream) {
     // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
     try {
       FileDownloadStream.downloadFile(
@@ -210,7 +210,7 @@ public class DaoSupportOracle implements DaoSupport {
               , new BinaryFileDownloadImpl()
               , tableName
               , dataFieldName
-              , " ( " + whereClause + " ) and " + 1, 1 // internally transformed to "where ( [whereClause] ) and 1=1"
+              , primaryKey, primaryKeyValues
               , null
               , null
               , false);

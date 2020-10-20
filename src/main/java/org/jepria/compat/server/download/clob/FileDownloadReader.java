@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * <pre>
@@ -77,8 +78,8 @@ public class FileDownloadReader extends Reader {
    * @param fileDownload        интерфейс загрузки файла
    * @param tableName           имя таблицы, откуда берем СLOB
    * @param fileFieldName        имя атрибута в таблице, откуда берем СLOB
-   * @param keyFieldName        PK в таблице tableName
-   * @param rowId               идентификатор строки таблицы
+   * @param primaryKey        PK в таблице tableName
+   * @param rowIds               идентификатор строки таблицы
    * @param dataSourceJndiName   имя источника данных
    * @throws IOException
    */
@@ -87,8 +88,8 @@ public class FileDownloadReader extends Reader {
       , FileDownload fileDownload
       , String tableName
       , String fileFieldName
-      , String keyFieldName
-      , Object rowId
+      , List<String> primaryKey
+      , List<Object> rowIds
       , String dataSourceJndiName
       , String moduleName
       , final boolean transactionable)
@@ -107,8 +108,8 @@ public class FileDownloadReader extends Reader {
       final int WRITE_LENGTH = fileDownload.beginRead(
           tableName
           , fileFieldName
-          , keyFieldName
-          , rowId
+          , primaryKey
+          , rowIds
           );
       readStream = new FileDownloadReader((TextFileDownload)fileDownload);
       char[] readBuffer = new char[WRITE_LENGTH];

@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -116,7 +117,7 @@ public class FileUploadStream extends OutputStream {
    * @param fileUpload          интерфейс выгрузки файла
    * @param tableName           имя таблицы, откуда берем BINARY_FILE
    * @param fileFieldName        имя атрибута в таблице, откуда берем BINARY_FILE
-   * @param keyFieldName        PK в таблице tableName
+   * @param primaryKey        PK в таблице tableName
    * @param rowId               идентификатор строки таблицы
    * @param dataSourceJndiName   имя источника данных
    * @param moduleName       имя модуля
@@ -127,8 +128,8 @@ public class FileUploadStream extends OutputStream {
     , FileUpload fileUpload
     , String tableName
     , String fileFieldName
-    , String keyFieldName
-    , Object rowId
+    , List<String> primaryKey
+    , List<Object> rowId
     , String dataSourceJndiName
     , String moduleName
     , final boolean transactionable)
@@ -139,8 +140,8 @@ public class FileUploadStream extends OutputStream {
     if(fileFieldName == null) {
       throw new SystemException("fileFieldName is empty");
     }
-    if(keyFieldName == null) {
-      throw new SystemException("keyFieldName is empty");
+    if(primaryKey == null) {
+      throw new SystemException("primaryKey is empty");
     }
     if(rowId == null) {
       throw new SystemException("rowId is empty");
@@ -157,7 +158,7 @@ public class FileUploadStream extends OutputStream {
       final int WRITE_LENGTH = fileUpload.beginWrite(
           tableName
           , fileFieldName
-          , keyFieldName
+          , primaryKey
           , rowId
           );
       writeStream = new FileUploadStream((BinaryFileUpload)fileUpload);

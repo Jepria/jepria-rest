@@ -6,15 +6,16 @@ import org.jepria.compat.server.download.AbstractFileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
+import java.util.List;
+
 /**
  * Класс, реализующий выгрузку (download) бинарного файла.
  */
 public class BinaryFileDownloadImpl extends AbstractFileDownload implements BinaryFileDownload {
-  
+
   /**
-   * Метод начинает чтение данных из LOB. 
-   * 
-   * @param rowId идентификатор строки таблицы
+   * Метод начинает чтение данных из LOB.
+   *
    * @return рекомендуемая величина буфера
    * @throws ApplicationException
    */
@@ -22,15 +23,15 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
   public int beginRead(
       String tableName
       , String fileFieldName
-      , String keyFieldName
-      , Object rowId
+      , List<String> primaryKey
+      , List<Object> rowIds
       )
       throws ApplicationException {
 
     int result = -1;
     try {
 
-      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, keyFieldName, rowId);
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, primaryKey, rowIds);
       result = ((BinaryLargeObject)super.largeObject).beginRead();
     } catch (ApplicationException ex) {
       cancel();
@@ -41,10 +42,10 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
 
     return result;
   }
-  
+
   /**
    * Чтение очередного блока данных из BINARY_FILE.
-   * 
+   *
    * @param dataBlock блок данных
    * @throws SpaceException
    */
@@ -66,7 +67,7 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
       }
       storedContext = CallContext.detach();
     }
-    
+
     return result;
   }
 }

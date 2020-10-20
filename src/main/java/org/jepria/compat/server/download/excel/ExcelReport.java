@@ -1,49 +1,15 @@
 package org.jepria.compat.server.download.excel;
 
-import static org.jepria.compat.server.JepRiaServerConstant.JEP_RIA_RESOURCE_BUNDLE_NAME;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.AUTO_FILTER_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.AUTO_FILTER_SUFFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.CDATA_POSTFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.CDATA_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.CELL_POSTFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.COLUMN_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.DATETIME_CELL_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.DATE_CELL_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.DECIMAL_CELL_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.DEFAULT_STYLES;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.EMPTY_CELL;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.EXCEL_DATE_FORMAT;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.EXCEL_DATETIME_FORMAT;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.EXCEL_DECIMAL_FORMAT;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.HEADER_CELL_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.INTEGER_CELL_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.ROW_POSTFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.ROW_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.STRING_CELL_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.STYLES_FOOTER;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.STYLES_HEADER;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.TABLE_FOOTER;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.TABLE_HEADER;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.TIME_CELL_PREFIX;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.XML_FOOTER;
-import static org.jepria.compat.server.download.excel.ExcelReportConstant.XML_HEADER;
-import static org.jepria.compat.shared.util.JepRiaUtil.isEmpty;
+import org.jepria.server.data.RecordDefinition;
 
 import java.io.PrintWriter;
-import java.text.DateFormat;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.ResourceBundle;
+import java.math.BigDecimal;
+import java.text.*;
+import java.util.*;
 
-import org.jepria.compat.shared.field.JepTypeEnum;
-import org.jepria.compat.shared.record.JepRecord;
-import org.jepria.compat.shared.record.JepRecordDefinition;
-import org.jepria.compat.shared.time.JepTime;
+import static org.jepria.compat.server.JepRiaServerConstant.JEP_RIA_RESOURCE_BUNDLE_NAME;
+import static org.jepria.compat.server.download.excel.ExcelReportConstant.*;
+import static org.jepria.compat.shared.util.JepRiaUtil.isEmpty;
 
 /**
  * Класс, формирующий Excel-отчёт.<br/>
@@ -57,7 +23,7 @@ public class ExcelReport {
   /**
    * Определение записи.
    */
-  protected final JepRecordDefinition recordDefinition;
+  protected final RecordDefinition recordDefinition;
   
   /**
    * Список идентификаторов полей, используемых для формирования документа.
@@ -72,7 +38,7 @@ public class ExcelReport {
   /**
    * Список записей, на основе которых строится документ.
    */
-  protected final List<JepRecord> resultRecords;
+  protected final List<Map<String, ?>> resultRecords;
   
   /**
    * Resource bundle (необходим для обработки полей типа Boolean).
@@ -97,7 +63,7 @@ public class ExcelReport {
    * @param reportHeaders наименования полей
    * @param resultRecords список записей для формирования документа
    */
-  public ExcelReport(JepRecordDefinition recordDefinition, List<String> reportFields, List<String> reportHeaders, List<JepRecord> resultRecords) {
+  public ExcelReport(RecordDefinition recordDefinition, List<String> reportFields, List<String> reportHeaders, List<Map<String, ?>> resultRecords) {
     this.recordDefinition = recordDefinition;
     this.reportFields = reportFields;
     this.reportHeaders = reportHeaders;
@@ -147,7 +113,7 @@ public class ExcelReport {
     }
     
     if(resultRecords != null) {
-      for(JepRecord record: resultRecords) {
+      for(Map<String, ?> record: resultRecords) {
         pw.println(createDataRow(record));
       }
       pw.println(TABLE_FOOTER);
@@ -224,7 +190,7 @@ public class ExcelReport {
    * @param record запись, на основе которой формируется строка
    * @return XML-представление строки
    */
-  protected String createDataRow(JepRecord record) {
+  protected String createDataRow(Map<String, ?> record) {
     StringBuilder rowBuilder = new StringBuilder();
     
     if(reportFields != null) {
@@ -245,10 +211,10 @@ public class ExcelReport {
    * @param field идентификатор поля
    * @return XML-представление ячейки
    * @throws IllegalStateException в случае, если поле отсутствует в 
-   * {@link org.jepria.compat.shared.record.JepRecordDefinition определении записи}
+   * {@link RecordDefinition определении записи}
    */
-  protected String createCell(JepRecord record, String field) {
-    JepTypeEnum type = recordDefinition.getType(field);
+  protected String createCell(Map<String, ?> record, String field) {
+    Class<?> type = recordDefinition.getFieldType(field);
         if (type == null) {
             throw new IllegalStateException(
               MessageFormat.format(resourceBundle.getString("errors.excel.fieldTypeNotDefined"), field));
@@ -256,20 +222,21 @@ public class ExcelReport {
     Object value = record.get(field);
     if (isEmpty(value)) {
       return createEmptyCell();
-    }
-    else {
-      switch (type) {
-        case DATE:return createDateCell((Date) value);
-        case TIME: return createTimeCell((JepTime)value);
-        case DATE_TIME: return createDateTimeCell((Date) value);
-        case BOOLEAN: return createBooleanCell((Boolean) value);
-        case INTEGER: return createIntegerCell((Integer) value);
-        case FLOAT:
-        case DOUBLE:
-        case BIGDECIMAL:
-          return createDecimalCell((Number) value);
-        default: return createDefaultCell(value);
+    } else {
+      if (Date.class.equals(type)) {
+        if (hasTime((Date) value)) {
+          return createDateTimeCell((Date) value);
+        } else {
+          return createDateCell((Date) value);
+        }
+      } else if (Boolean.class.equals(type)) {
+        return createBooleanCell((Boolean) value);
+      } else if (Integer.class.equals(type)) {
+        return createIntegerCell((Integer) value);
+      } else if (Float.class.equals(type) || Double.class.equals(type) || BigDecimal.class.equals(type)) {
+        return createDecimalCell((Number) value);
       }
+      return createDefaultCell(value);
     }
   }
 
@@ -330,30 +297,30 @@ public class ExcelReport {
   }
 
   /**
-   * Создание ячейки с датой и временем.<br/>
-   * Если необходимо специальное форматирование для ячеек с датой и временем, данный метод
-   * переопределяется в наследниках.
-   * @param dateTime дата и время, помещаемые в ячейку
-   * @return XML-представление ячейки с датой и временем
-   */  
-  protected String createDateTimeCell(Date dateTime) {
-    DateFormat dateTimeFormat = new SimpleDateFormat(EXCEL_DATETIME_FORMAT);
-    String stringValue = dateTimeFormat.format(dateTime);
-    return DATETIME_CELL_PREFIX + stringValue + CELL_POSTFIX;
-  }
-
-  /**
-   * Создание ячейки с временем.<br/>
-   * Если необходимо специальное форматирование для ячеек с временем, данный метод
-   * переопределяется в наследниках.
-   * @param time время, помещаемое в ячейку
-   * @return XML-представление ячейки с временем
-   */  
-  protected String createTimeCell(JepTime time) {
-    DateFormat dateTimeFormat = new SimpleDateFormat(EXCEL_DATETIME_FORMAT);
-    Date timeAsDate = ((JepTime)time).addDate(new Date());
-    String stringValue = dateTimeFormat.format(timeAsDate);
-    return TIME_CELL_PREFIX + stringValue + CELL_POSTFIX;
+   * Determines whether or not a date has any time values.
+   * @param date The date.
+   * @return true if the date is not null and any of the date's hour, minute,
+   * seconds or millisecond values are greater than zero.
+   */
+  private static boolean hasTime(Date date) {
+    if (date == null) {
+      return false;
+    }
+    Calendar c = Calendar.getInstance();
+    c.setTime(date);
+    if (c.get(Calendar.HOUR_OF_DAY) > 0) {
+      return true;
+    }
+    if (c.get(Calendar.MINUTE) > 0) {
+      return true;
+    }
+    if (c.get(Calendar.SECOND) > 0) {
+      return true;
+    }
+    if (c.get(Calendar.MILLISECOND) > 0) {
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -367,6 +334,19 @@ public class ExcelReport {
     DateFormat dateFormat = new SimpleDateFormat(EXCEL_DATE_FORMAT);
     String stringValue = dateFormat.format(date);
     return DATE_CELL_PREFIX + stringValue + CELL_POSTFIX;
+  }
+
+  /**
+   * Создание ячейки с датой и временем.<br/>
+   * Если необходимо специальное форматирование для ячеек с датой и временем, данный метод
+   * переопределяется в наследниках.
+   * @param dateTime дата и время, помещаемые в ячейку
+   * @return XML-представление ячейки с датой и временем
+   */
+  protected String createDateTimeCell(Date dateTime) {
+    DateFormat dateTimeFormat = new SimpleDateFormat(EXCEL_DATETIME_FORMAT);
+    String stringValue = dateTimeFormat.format(dateTime);
+    return DATETIME_CELL_PREFIX + stringValue + CELL_POSTFIX;
   }
 
   /**

@@ -1,36 +1,28 @@
 package org.jepria.compat.server.download.excel;
 
-import static org.jepria.compat.server.JepRiaServerConstant.EXCEL_REPORT_FIELDS_SESSION_ATTRIBUTE;
-import static org.jepria.compat.server.JepRiaServerConstant.EXCEL_REPORT_HEADERS_SESSION_ATTRIBUTE;
-import static org.jepria.compat.server.JepRiaServerConstant.FOUND_RECORDS_SESSION_ATTRIBUTE;
-import static org.jepria.compat.server.JepRiaServerConstant.SELECTED_RECORDS_SESSION_ATTRIBUTE;
-import static org.jepria.compat.shared.JepRiaConstant.EXCEL_DEFAULT_FILE_NAME;
-import static org.jepria.compat.shared.JepRiaConstant.EXCEL_FILE_NAME_PARAMETER;
-import static org.jepria.compat.shared.JepRiaConstant.LIST_UID_REQUEST_PARAMETER;
-import static org.jepria.compat.shared.util.JepRiaUtil.isEmpty;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.List;
+import org.apache.log4j.Logger;
+import org.jepria.server.data.RecordDefinition;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.log4j.Logger;
-
-import org.jepria.compat.shared.record.JepRecord;
-import org.jepria.compat.shared.record.JepRecordDefinition;
+import static org.jepria.compat.server.JepRiaServerConstant.*;
+import static org.jepria.compat.shared.util.JepRiaUtil.isEmpty;
 
 /**
  * Сервлет для отображения набора данных в Excel.<br/>
  * Для использования в прикладном модуле необходимо:
  * <ul>
  *   <li>унаследовать в прикладном модуле сервлет от данного класса вызвав в <code>public</code> конструкторе без параметров конструктор данного
- *   класса {@link #ExcelServlet(JepRecordDefinition recordDefinition)} с указанием 
- *   {@link org.jepria.compat.shared.record.JepRecordDefinition определения записи}. Пример:
+ *   класса {@link #ExcelServlet(RecordDefinition recordDefinition)} с указанием
+ *   {@link RecordDefinition определения записи}. Пример:
  *     <pre>
  *       ...
  *       public PrintActExcelServlet() {
@@ -56,67 +48,63 @@ import org.jepria.compat.shared.record.JepRecordDefinition;
  *     </pre>
  *   </li>
  * </ul>
- * <b>Важно:</b> При добавлении новых полей необходимо внести их в 
- * {@link org.jepria.compat.shared.record.JepRecordDefinition определение записи}.
+ * <b>Важно:</b> При добавлении новых полей необходимо внести их в
+ * {@link RecordDefinition определение записи}.
  */
 @SuppressWarnings("serial")
 public class ExcelServlet extends HttpServlet {
 
   protected static final Logger logger = Logger.getLogger(ExcelServlet.class.getName());
-  
+
   /**
    * Определение записи набора данных.
    */
-  protected JepRecordDefinition recordDefinition = null;
-  
+  protected RecordDefinition recordDefinition = null;
+
   /**
    * Создает сервлет для отображения набора данных в Excel.<br/>
-   * Конструктор вызывается с указанием {@link org.jepria.compat.shared.record.JepRecordDefinition определения записи} в прикладных модулях
+   * Конструктор вызывается с указанием {@link RecordDefinition определения записи} в прикладных модулях
    * из <code>public</code> конструктора без параметров.
    *
    * @param recordDefinition определение записи набора данных
    */
-  public ExcelServlet(JepRecordDefinition recordDefinition) {
-    this.recordDefinition = recordDefinition;    
+  public ExcelServlet(RecordDefinition recordDefinition) {
+    this.recordDefinition = recordDefinition;
   }
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response)
-  throws ServletException, IOException {
+      throws ServletException, IOException {
     logger.trace("BEGIN Generate Excel Report");
-    
+
     String listUIDParameter = request.getParameter(LIST_UID_REQUEST_PARAMETER);
-    if (isEmpty(listUIDParameter)){
+    if (isEmpty(listUIDParameter)) {
       response.setContentType("text/html;charset=UTF-8");
-      response.getOutputStream().print("<b>Request parameter '" + LIST_UID_REQUEST_PARAMETER +"' is mandatory!</b>");
+      response.getOutputStream().print("<b>Request parameter '" + LIST_UID_REQUEST_PARAMETER + "' is mandatory!</b>");
       return;
     }
-    
+
     Integer listUID = Integer.valueOf(listUIDParameter);
     HttpSession session = request.getSession();
-    
+
     String fileName = request.getParameter(EXCEL_FILE_NAME_PARAMETER);
     if (fileName == null) {
       fileName = EXCEL_DEFAULT_FILE_NAME;
     }
     logger.trace("fileName=" + fileName);
-    
+
     @SuppressWarnings("unchecked")
-    List<String> reportHeaders = (List<String>)session.getAttribute(EXCEL_REPORT_HEADERS_SESSION_ATTRIBUTE + listUID);
+    List<String> reportHeaders = (List<String>) session.getAttribute(EXCEL_REPORT_HEADERS_SESSION_ATTRIBUTE + listUID);
     logger.trace("reportHeaders = " + reportHeaders);
-    
+
     @SuppressWarnings("unchecked")
-    List<String> reportFields = (List<String>)session.getAttribute(EXCEL_REPORT_FIELDS_SESSION_ATTRIBUTE + listUID);
+    List<String> reportFields = (List<String>) session.getAttribute(EXCEL_REPORT_FIELDS_SESSION_ATTRIBUTE + listUID);
     logger.trace("reportFields = " + reportFields);
 
     @SuppressWarnings("unchecked")
-    List<JepRecord> selectedRecords = (List<JepRecord>) session.getAttribute(SELECTED_RECORDS_SESSION_ATTRIBUTE + listUID);
-    logger.trace("seletedRecords = " + selectedRecords);
+    List<Map<String, ?>> records = (List<Map<String, ?>>) session.getAttribute(FOUND_RECORDS_SESSION_ATTRIBUTE + listUID);
+    logger.trace("resultRecords = " + records);
 
-    @SuppressWarnings("unchecked")
-    List<JepRecord> resultRecords = (List<JepRecord>)session.getAttribute(FOUND_RECORDS_SESSION_ATTRIBUTE + listUID);
-    logger.trace("resultRecords = " + resultRecords);    
-    
     response.setCharacterEncoding("UTF-8");
     response.setHeader("Cache-Control", "cache"); //HTTP 1.1
     response.setHeader("Pragma", "no-cache"); //HTTP 1.0
@@ -124,23 +112,22 @@ public class ExcelServlet extends HttpServlet {
     response.setDateHeader("Last-Modified", System.currentTimeMillis());
     response.setContentType("application/vnd.ms-excel; charset=UTF-8");
     response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
-    
-    PrintWriter pw = response.getWriter();    
-    
+
+    PrintWriter pw = response.getWriter();
+
     try {
       ExcelReport report = createExcelReport(
-        reportFields, 
-        reportHeaders, 
-        selectedRecords != null ? selectedRecords : resultRecords);
+          reportFields,
+          reportHeaders,
+          records);
       report.print(pw);
-      
+
       pw.flush();
       response.flushBuffer();
-    }
-    catch (Throwable th) {
+    } catch (Throwable th) {
       onError(response, th);
     }
-    
+
     logger.trace("END Generate Excel Report");
   }
 
@@ -149,12 +136,12 @@ public class ExcelServlet extends HttpServlet {
    * По умолчанию создаёт объект класса ExcelReport. Если в прикладном модуле для этих цедей
    * используется собственный класс, то данный метод необходимо переопределить.
    *
-   * @param reportFields список идентификаторов полей для формирования выгрузки
+   * @param reportFields  список идентификаторов полей для формирования выгрузки
    * @param reportHeaders список заголовков таблицы в Excel-файле
-   * @param records спиок записей для выгрузки
+   * @param records       спиок записей для выгрузки
    * @return объект Excel-отчёта
    */
-  protected ExcelReport createExcelReport(List<String> reportFields, List<String> reportHeaders, List<JepRecord> records) {
+  protected ExcelReport createExcelReport(List<String> reportFields, List<String> reportHeaders, List<Map<String, ?>> records) {
     return new ExcelReport(recordDefinition, reportFields, reportHeaders, records);
   }
 
@@ -163,12 +150,13 @@ public class ExcelServlet extends HttpServlet {
       throws ServletException, IOException {
     doPost(request, response);
   }
-  
+
   /**
    * Отправка сообщения об ошибке в случае её возникновения.<br/>
    * При необходимости данный метод может быть переопределён в классе-наследнике.
+   *
    * @param response результат работы сервлета (ответ)
-   * @param th возникшее исключение
+   * @param th       возникшее исключение
    * @throws IOException
    */
   protected void onError(HttpServletResponse response, Throwable th) throws IOException {

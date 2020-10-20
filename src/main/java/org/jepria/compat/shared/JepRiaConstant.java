@@ -58,6 +58,7 @@ public class JepRiaConstant {
   public static final String JEP_USER_ROLES_FIELD_NAME = "userRoles";
   
   public static final String DOWNLOAD_FIELD_NAME = "fieldName";
+  public static final String DOWNLOAD_FILE_TYPE = "fileType";
   public static final String DOWNLOAD_RECORD_KEY = "recordKey";
   public static final String DOWNLOAD_MIME_TYPE = "mimeType";
   public static final String DOWNLOAD_EXTENSION = "ext";
@@ -103,9 +104,17 @@ public class JepRiaConstant {
    * Наименование скрытого поля компонента LargeField, предназначенного для хранения информации о необходимости удаления файла
    */
   public static final String IS_DELETED_FILE_HIDDEN_FIELD_NAME = "isDeleted";
-  
+
   /**
    * Имя параметра http-запроса: локаль текущей межмодульной сессии
    */
   public static final String HTTP_REQUEST_PARAMETER_LOCALE = "locale";
+  /**
+   * Тип двичного файла
+   */
+  public static final String BINARY_FILE = "BINARY_FILE";
+  /**
+   * Тип текстового файла
+   */
+  public static final String TEXT_FILE = "TEXT_FILE";;
 }

@@ -6,6 +6,8 @@ import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.server.upload.AbstractFileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
+import java.util.List;
+
 /**
  * Класс, реализующий загрузку (upload) файла в CLOB.
  */
@@ -14,7 +16,7 @@ public class TextFileUploadImpl extends AbstractFileUpload implements TextFileUp
   /**
    * Создаёт загрузчик файлов на сервер.
    */
-  public TextFileUploadImpl(){
+  public TextFileUploadImpl() {
     super();
   }
 
@@ -23,16 +25,16 @@ public class TextFileUploadImpl extends AbstractFileUpload implements TextFileUp
    */
   @Override
   public int beginWrite(
-    String tableName
-    , String fileFieldName
-    , String keyFieldName
-    , Object rowId)
-    throws ApplicationException {
+      String tableName
+      , String fileFieldName
+      , List<String> primaryKey
+      , List<Object> rowId)
+      throws ApplicationException {
 
     int result = -1;
     try {
-      super.largeObject = new TextLargeObject(tableName, fileFieldName, keyFieldName, rowId);
-      result = ((TextLargeObject)super.largeObject).beginWrite();
+      super.largeObject = new TextLargeObject(tableName, fileFieldName, primaryKey, rowId);
+      result = ((TextLargeObject) super.largeObject).beginWrite();
     } catch (ApplicationException ex) {
       cancel();
       throw ex;
@@ -42,7 +44,7 @@ public class TextFileUploadImpl extends AbstractFileUpload implements TextFileUp
 
     return result;
   }
-  
+
   /**
    * {@inheritDoc}
    */
@@ -51,7 +53,7 @@ public class TextFileUploadImpl extends AbstractFileUpload implements TextFileUp
     CallContext.attach(storedContext);
     boolean cancelled = false;
     try {
-      ((TextLargeObject)super.largeObject).continueWrite(dataBlock);
+      ((TextLargeObject) super.largeObject).continueWrite(dataBlock);
     } catch (Throwable ex) {
       cancelled = true;
       if (ex instanceof SpaceException) {

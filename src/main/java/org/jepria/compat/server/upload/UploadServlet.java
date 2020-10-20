@@ -1,34 +1,11 @@
 package org.jepria.compat.server.upload;
 
-import static org.jepria.compat.server.JepRiaServerConstant.JEP_RIA_RESOURCE_BUNDLE_NAME;
-import static org.jepria.compat.shared.JepRiaConstant.FILE_SIZE_HIDDEN_FIELD_NAME;
-import static org.jepria.compat.shared.JepRiaConstant.PRIMARY_KEY_HIDDEN_FIELD_NAME;
-import static org.jepria.compat.shared.JepRiaConstant.IS_DELETED_FILE_HIDDEN_FIELD_NAME;
-import static org.jepria.compat.shared.field.JepTypeEnum.BINARY_FILE;
-import static org.jepria.compat.shared.field.JepTypeEnum.TEXT_FILE;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.text.MessageFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.InvalidFileNameException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.log4j.Logger;
-
 import org.jepria.compat.server.JepRiaServerConstant;
 import org.jepria.compat.server.upload.blob.BinaryFileUploadImpl;
 import org.jepria.compat.server.upload.blob.FileUploadStream;
@@ -37,26 +14,34 @@ import org.jepria.compat.server.upload.clob.TextFileUploadImpl;
 import org.jepria.compat.server.util.JepServerUtil;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.UnsupportedException;
-import org.jepria.compat.shared.field.JepTypeEnum;
-import org.jepria.compat.shared.history.JepHistoryToken;
-import org.jepria.compat.shared.record.lob.JepLobRecordDefinition;
 import org.jepria.compat.shared.util.JepRiaUtil;
+import org.jepria.server.data.RecordIdParser;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.text.MessageFormat;
+import java.util.*;
+
+import static org.jepria.compat.server.JepRiaServerConstant.JEP_RIA_RESOURCE_BUNDLE_NAME;
+import static org.jepria.compat.shared.JepRiaConstant.*;
 
 /**
  * Сервлет для загрузки файлов на сервер.<br/>
  * Осуществляет загрузку текстовых и бинарных файлов в таблицу базы данных.
- *
  */
 @SuppressWarnings("serial")
-public class JepUploadServlet extends HttpServlet {
+public class UploadServlet extends HttpServlet {
   /**
    * Логгер.
    */
-  protected static Logger logger = Logger.getLogger(JepUploadServlet.class.getName());  
-  /**
-   * Определение записи.
-   */
-  protected JepLobRecordDefinition fileRecordDefinition = null;
+  protected static Logger logger = Logger.getLogger(UploadServlet.class.getName());
   /**
    * JNDI-имя источника данных.
    */
@@ -65,7 +50,7 @@ public class JepUploadServlet extends HttpServlet {
    * Имя модуля, передаваемое в DB.
    */
   private String moduleName;
-  
+
   /**
    * Кодировка текстовых файлов.
    */
@@ -75,54 +60,83 @@ public class JepUploadServlet extends HttpServlet {
    * Признак необходимости производить загрузку в отдельной транзакции.
    */
   private final boolean transactionable;
+  /**
+   * Имя поля в таблице
+   */
+  private final String fileFieldName;
+  /**
+   * Имя таблицы
+   */
+  private final String tableName;
+  /**
+   * Тип файла
+   */
+  private final String fileType;
+  /**
+   * Имена полей первичного ключа
+   */
+  private final List<String> primaryKeyFieldNames;
 
   /**
    * Создаёт сервлет загрузки файлов на сервер.<br>
    * Для текстовых файлов используется кодировка по умолчанию - UTF-8.
-   * @param fileRecordDefinition определение записи
+   *
    * @param dataSourceJndiName JNDI-наименование источника данных
    */
-  public JepUploadServlet(
-      JepLobRecordDefinition fileRecordDefinition,
+  public UploadServlet(
+      String tableName,
+      String fileFieldName,
+      List<String> primaryKeyFieldNames,
+      String fileType,
       String dataSourceJndiName) {
-    this(fileRecordDefinition, dataSourceJndiName, JepRiaServerConstant.DEFAULT_ENCODING, true);
-  }
-  /**
-   * Создаёт сервлет загрузки файлов на сервер.
-   * @param fileRecordDefinition определение записи
-   * @param dataSourceJndiName JNDI-наименование источника данных
-   * @param textFileCharset кодировка текстовых файлов
-   */
-  public JepUploadServlet(
-    JepLobRecordDefinition fileRecordDefinition,
-    String dataSourceJndiName,
-    Charset textFileCharset) {
-
-    this(fileRecordDefinition, dataSourceJndiName, textFileCharset, true);
+    this(tableName, fileFieldName, primaryKeyFieldNames, fileType, dataSourceJndiName, JepRiaServerConstant.DEFAULT_ENCODING, true);
   }
 
   /**
    * Создаёт сервлет загрузки файлов на сервер.
-   * @param fileRecordDefinition определение записи
+   *
    * @param dataSourceJndiName JNDI-наименование источника данных
-   * @param textFileCharset кодировка текстовых файлов
+   * @param textFileCharset    кодировка текстовых файлов
    */
-  public JepUploadServlet(
-          JepLobRecordDefinition fileRecordDefinition,
-          String dataSourceJndiName,
-          Charset textFileCharset,
-          boolean transactionable) {
+  public UploadServlet(
+      String tableName,
+      String fileFieldName,
+      List<String> primaryKeyFieldNames,
+      String fileType,
+      String dataSourceJndiName,
+      Charset textFileCharset) {
 
-    this.fileRecordDefinition = fileRecordDefinition;
+    this(tableName, fileFieldName, primaryKeyFieldNames, fileType, dataSourceJndiName, textFileCharset, true);
+  }
+
+  /**
+   * Создаёт сервлет загрузки файлов на сервер.
+   *
+   * @param dataSourceJndiName JNDI-наименование источника данных
+   * @param textFileCharset    кодировка текстовых файлов
+   */
+  public UploadServlet(
+      String tableName,
+      String fileFieldName,
+      List<String> primaryKeyFieldNames,
+      String fileType,
+      String dataSourceJndiName,
+      Charset textFileCharset,
+      boolean transactionable) {
+
     this.dataSourceJndiName = dataSourceJndiName;
     this.textFileCharset = textFileCharset;
     this.transactionable = transactionable;
+    this.fileType = fileType;
+    this.primaryKeyFieldNames = Collections.unmodifiableList(primaryKeyFieldNames);
+    this.tableName = tableName;
+    this.fileFieldName = fileFieldName;
   }
 
   /**
    * Инициализация сервлета.
    * Переопределение метода обусловлено установкой имени модуля. Выполнить данную операцию
-   * в конструкторе невозможно, т.к. <code>getServletContext()</code> в конструкторе 
+   * в конструкторе невозможно, т.к. <code>getServletContext()</code> в конструкторе
    * выбрасывает <code>NullPointerException</code>.
    */
   @Override
@@ -145,16 +159,13 @@ public class JepUploadServlet extends HttpServlet {
         // TODO Параллельный эффективнее, но насколько это актуально ?
         List<FileItem> items = upload.parseRequest(request);
         if (items.size() >= 2) { // Должно быть два параметра: файл и привязка к полю записи таблицы БД
-          
-          //Привязки к полю записи таблицы БД по первичному ключу
-          Map<String, Object> primaryKeyMap = getPrimaryKeyMap(items);
-          
+
           FileItem fileSizeFormField = getFormField(items, FILE_SIZE_HIDDEN_FIELD_NAME);
           String fileSizeAsString = fileSizeFormField.getString();
           Integer specifiedFileSize = JepRiaUtil.isEmpty(fileSizeAsString) ? null : Integer.decode(fileSizeAsString) * 1024; // in Kbytes
-          
+
           StringBuilder errorMessage = new StringBuilder();
-          
+
           for (FileItem fileItem : items) {
             if (!fileItem.isFormField()) {
               // check file size if necessary
@@ -167,39 +178,36 @@ public class JepUploadServlet extends HttpServlet {
                 response.flushBuffer();
                 return;
               }
-              
+
               String fileName = null;
               try {
                 fileName = fileItem.getName();
-              } catch(InvalidFileNameException e) {
+              } catch (InvalidFileNameException e) {
                 fileName = e.getName();
               }
-              
+
               FileItem isDeletedFormField = getFormField(items, IS_DELETED_FILE_HIDDEN_FIELD_NAME);
-              boolean isDeleted = isDeletedFormField != null && 
+              boolean isDeleted = isDeletedFormField != null &&
                   Boolean.valueOf(isDeletedFormField.getString());
-              
+
               if (!JepRiaUtil.isEmpty(fileName) || isDeleted) {
-                String fileFieldName = getFileFieldName(fileItem);
-                JepTypeEnum fileFieldType = getFileFieldType(fileItem);
-                String tableName = fileRecordDefinition.getTableName();
                 try {
-                  if (fileFieldType == BINARY_FILE) {
+                  if (fileType == BINARY_FILE) {
                     uploadBinary(
-                      fileItem.getInputStream(),
-                      tableName,
-                      fileFieldName,
-                      primaryKeyMap);
-                  } else if (fileFieldType == TEXT_FILE) {
+                        fileItem.getInputStream(),
+                        tableName,
+                        fileFieldName,
+                        getPrimaryKeyMap(items));
+                  } else if (fileType == TEXT_FILE) {
                     uploadText(
-                      fileItem.getInputStream(),
-                      tableName,
-                      fileFieldName,
-                      primaryKeyMap);
+                        fileItem.getInputStream(),
+                        tableName,
+                        fileFieldName,
+                        getPrimaryKeyMap(items));
                   } else {
-                    throw new UnsupportedException(this.getClass() + ".doPost(): " + fileFieldType + " field type does not supported for upload.");
+                    throw new UnsupportedException(this.getClass() + ".doPost(): " + fileType + " field type does not supported for upload.");
                   }
-                } catch(Throwable th) {
+                } catch (Throwable th) {
                   String message = "doPost().upload error in '" + fileFieldName + "' field: " + th.getMessage();
                   logger.error(message, th);
                   errorMessage.append(message);
@@ -220,9 +228,9 @@ public class JepUploadServlet extends HttpServlet {
           FileItem formField = getFormField(items, PRIMARY_KEY_HIDDEN_FIELD_NAME);
           // Параметр привязки к полю записи таблицы БД
           throw new IllegalArgumentException("Parameters number should be 3, but we have: "
-                  + items.size() + ". "
-                  + (formField == null ? "FormField" : "File")
-                  + " item is absent.");
+              + items.size() + ". "
+              + (formField == null ? "FormField" : "File")
+              + " item is absent.");
 
         }
       } catch (Exception ex) {
@@ -235,145 +243,104 @@ public class JepUploadServlet extends HttpServlet {
           "doPost(): Request contents type is not supported by the servlet.");
     }
   }
-  
-  /**
-   * Получает тип загружаемого файла. <br/>
-   * Метод создан для переопределения в потомках, когда нет возможности получить данные из fileRecordDefinition. 
-   * @param fileItem Интерфейс выгрузки файла.
-   * @return Тип загружаемого файла.
-   */
-  protected JepTypeEnum getFileFieldType(FileItem fileItem) {
-    return fileRecordDefinition.getTypeMap().get(fileItem.getFieldName());
-  }
-  
-  /**
-   * Получает имя поля в таблице, в которое загружается файл. <br/>
-   * Метод создан для переопределения в потомках, когда нет возможности получить данные из fileRecordDefinition. 
-   * @param fileItem Интерфейс выгрузки файла.
-   * @return Имя поля в таблице, в которое загружается файл.
-   */
-  protected String getFileFieldName(FileItem fileItem) {
-    return fileRecordDefinition.getFieldMap().get(fileItem.getFieldName());
-  }
-  
+
   /**
    * Возвращает карту первичных ключей.
+   *
    * @param items Список FileItem из запроса.
    * @return Карта первичных ключей.
    * @throws UnsupportedEncodingException
    * @throws ApplicationException
    */
-  protected Map<String, Object> getPrimaryKeyMap(List<FileItem> items) throws UnsupportedEncodingException, ApplicationException {
+  protected Map<String, String> getPrimaryKeyMap(List<FileItem> items) throws UnsupportedEncodingException, ApplicationException {
     // Параметр привязки к полю записи таблицы БД
     FileItem primaryKeyFormField = getFormField(items, PRIMARY_KEY_HIDDEN_FIELD_NAME);
-    String primaryKeyToken = primaryKeyFormField.getString("UTF-8");
-    Map<String, Object> primaryKeyMap = JepHistoryToken.buildMapFromToken(primaryKeyToken);
+    String primaryKeyString = primaryKeyFormField.getString("UTF-8");
+    Map<String, String> primaryKeyMap = RecordIdParser.parseComposite(primaryKeyString);
     return primaryKeyMap;
   }
-  
+
   /**
    * Загрузка на сервер бинарного файла.
-   * @param inputStream поток данных
-   * @param tableName имя таблицы, в которую загружается файл
+   *
+   * @param inputStream   поток данных
+   * @param tableName     имя таблицы, в которую загружается файл
    * @param fileFieldName имя поля, в которое загружается файл
    * @param primaryKeyMap первичный ключ
    * @throws IOException
    * @throws Exception
    */
   protected void uploadBinary(
-    InputStream inputStream
-    , String tableName
-    , String fileFieldName
-    , Map<String, Object> primaryKeyMap
-    ) throws IOException, Exception {
-    
-      if (primaryKeyMap.size() == 1) {
-        FileUploadStream.uploadFile(
-          inputStream,
-          new BinaryFileUploadImpl(),
-          tableName,
-          fileFieldName,
-          fileRecordDefinition.getKeyFieldName(),
-          primaryKeyMap.values().toArray()[0],
-          this.dataSourceJndiName,
-          this.moduleName,
-          transactionable);
-      } else {
-        FileUploadStream.uploadFile(
-          inputStream,
-          new BinaryFileUploadImpl(),
-          tableName,
-          fileFieldName,
-          primaryKeyMap,
-          this.dataSourceJndiName,
-          this.moduleName,
-          transactionable);
-      }
-    
+      InputStream inputStream
+      , String tableName
+      , String fileFieldName
+      , Map<String, String> primaryKeyMap
+  ) throws IOException, Exception {
+
+    FileUploadStream.uploadFile(
+        inputStream,
+        new BinaryFileUploadImpl(),
+        tableName,
+        fileFieldName,
+        primaryKeyFieldNames,
+        new ArrayList(primaryKeyMap.values()),
+        this.dataSourceJndiName,
+        this.moduleName,
+        transactionable);
+
   }
 
   /**
    * Загрузка на сервер текстового файла.
-   * @param inputStream поток данных
-   * @param tableName имя таблицы, в которую загружается файл
+   *
+   * @param inputStream   поток данных
+   * @param tableName     имя таблицы, в которую загружается файл
    * @param fileFieldName имя поля, в которое загружается файл
    * @param primaryKeyMap первичный ключ
    * @throws IOException
    * @throws Exception
    */
   protected void uploadText(
-    InputStream inputStream
-    , String tableName
-    , String fileFieldName
-    , Map<String, Object> primaryKeyMap
-    ) throws IOException, Exception {
-    
-      if (primaryKeyMap.size() == 1) {
-        FileUploadWriter.uploadFile(
-          new InputStreamReader(inputStream, textFileCharset),
-          new TextFileUploadImpl(),
-          tableName,
-          fileFieldName,
-          fileRecordDefinition.getKeyFieldName(),
-          primaryKeyMap.values().toArray()[0],
-          this.dataSourceJndiName,
-          this.moduleName,
-          transactionable);
-      } else {
-        FileUploadWriter.uploadFile(
-          new InputStreamReader(inputStream, textFileCharset),
-          new TextFileUploadImpl(),
-          tableName,
-          fileFieldName,
-          primaryKeyMap,
-          this.dataSourceJndiName,
-          this.moduleName,
-          transactionable);
-      }
-    
+      InputStream inputStream
+      , String tableName
+      , String fileFieldName
+      , Map<String, String> primaryKeyMap
+  ) throws IOException, Exception {
+    FileUploadWriter.uploadFile(
+        new InputStreamReader(inputStream, textFileCharset),
+        new TextFileUploadImpl(),
+        tableName,
+        fileFieldName,
+        primaryKeyFieldNames,
+        new ArrayList(primaryKeyMap.values()),
+        this.dataSourceJndiName,
+        this.moduleName,
+        transactionable);
   }
-  
+
   /**
    * Получение интерфейса выгрузки файлов.<br/>
-   * Предполагается, что может быть только одно поле формы с указанным наименованием 
-   * @param items список интерфейсов выгрузки файлов
-   * @param fieldName наименование поля 
+   * Предполагается, что может быть только одно поле формы с указанным наименованием
+   *
+   * @param items     список интерфейсов выгрузки файлов
+   * @param fieldName наименование поля
    */
   protected FileItem getFormField(List<FileItem> items, String fieldName) {
-        for (FileItem item : items) {
-          if (item.isFormField() && fieldName.equalsIgnoreCase(item.getFieldName())) {
-            return item;
-          }
-        }
+    for (FileItem item : items) {
+      if (item.isFormField() && fieldName.equalsIgnoreCase(item.getFieldName())) {
+        return item;
+      }
+    }
     return null;
   }
 
   /**
    * Отправка сообщения об ошибке в случае неуспешной загрузки.<br/>
    * При необходимости данный метод может быть переопределён в классе-наследнике.
+   *
    * @param response результат работы сервлета (ответ)
-   * @param error HTTP-код ошибки
-   * @param message текст сообщения об ошибке
+   * @param error    HTTP-код ошибки
+   * @param message  текст сообщения об ошибке
    * @throws IOException
    */
   protected void onError(HttpServletResponse response, int error, String message) throws IOException {

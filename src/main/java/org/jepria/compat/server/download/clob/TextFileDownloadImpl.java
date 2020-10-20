@@ -7,14 +7,15 @@ import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
 
+import java.util.List;
+
 /**
  * Реализует запись в CLOB.
  */
 public class TextFileDownloadImpl extends AbstractFileDownload implements TextFileDownload {
   /**
    * Метод начинает чтение данных из LOB. 
-   * 
-   * @param rowId идентификатор строки таблицы
+   *
    * @return рекомендуемая величина буфера
    * @throws ApplicationException
    */
@@ -22,15 +23,15 @@ public class TextFileDownloadImpl extends AbstractFileDownload implements TextFi
   public int beginRead(
       String tableName
       , String fileFieldName
-      , String keyFieldName
-      , Object rowId
+      , List<String> primaryKey
+      , List<Object> rowIds
       )
       throws ApplicationException {
 
     int result = -1;
     try {
 
-      super.largeObject = new TextLargeObject(tableName, fileFieldName, keyFieldName, rowId);
+      super.largeObject = new TextLargeObject(tableName, fileFieldName, primaryKey, rowIds);
       result = ((TextLargeObject)super.largeObject).beginRead();
     } catch (ApplicationException ex) {
       cancel();

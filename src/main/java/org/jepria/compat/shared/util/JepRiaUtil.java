@@ -1,14 +1,9 @@
 package org.jepria.compat.shared.util;
 
 import static org.jepria.compat.shared.JepRiaConstant.UNDEFINED_INT;
-import static org.jepria.compat.shared.field.TreeCellNames.PARENT;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.jepria.compat.shared.field.option.JepOption;
-import org.jepria.compat.shared.field.option.JepParentOption;
-import org.jepria.compat.shared.record.lob.JepClob;
 import org.jepria.compat.shared.record.lob.JepFileReference;
 
 public class JepRiaUtil {
@@ -30,12 +25,6 @@ public class JepRiaUtil {
     } else if (obj instanceof List){
       List<?> objList = (List<?>)obj;
       return objList.isEmpty();
-    } else if (obj instanceof JepOption) {
-      JepOption objJepOption = (JepOption)obj;
-      return (objJepOption.equals(JepOption.EMPTY_OPTION)) ? true : false;
-    } else if (obj instanceof JepClob) {
-      JepClob objClob = (JepClob)obj;
-      return (JepRiaUtil.isEmpty(objClob.getBigText())) ? true : false;
     } else if (obj instanceof JepFileReference<?>) {
       JepFileReference<?> objJepFileReference = (JepFileReference<?>)obj;
       return JepRiaUtil.isEmpty(objJepFileReference.getFileName()) &&
@@ -156,21 +145,6 @@ public class JepRiaUtil {
     // Правила использования модификаторов i (игнорирования регистра) для регулярных выражений в Java и JavaScript, к сожалению, отличаются.
     // Поэтому, для поддержания единой точки определения признака "мобильности", приходится предварительно привести явно строку к ниженму регистру.
     return (ua != null && ua.toLowerCase().matches(".*(mobile|mini).*"));
-  }
-  
-  /**
-   * Фильтрует список опций древовидного справочника, убирает опции, родитель которых отсутствует в списке.
-   * @param options
-   * @return
-   */
-  public static List<JepOption> removeOptionsWithoutParents(List<JepOption> options) {
-    return options.stream().filter(option -> {
-      if (!(option instanceof JepParentOption)){ // a leaf node
-        JepParentOption parentOption = option.get(PARENT);
-        return JepRiaUtil.isEmpty(parentOption) || options.contains(parentOption);
-      }
-      return true;
-    }).collect(Collectors.toList());
   }
 
 }

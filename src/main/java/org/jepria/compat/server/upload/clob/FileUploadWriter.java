@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -88,7 +89,7 @@ public class FileUploadWriter extends Writer {
    * @param fileUpload          интерфейс выгрузки файла
    * @param tableName           имя таблицы, откуда берем СLOB
    * @param fileFieldName        имя атрибута в таблице, откуда берем СLOB
-   * @param keyFieldName        PK в таблице tableName
+   * @param primaryKey        PK в таблице tableName
    * @param rowId               идентификатор строки таблицы
    * @param dataSourceJndiName   имя источника данных
    * @param moduleName       имя модуля
@@ -99,8 +100,8 @@ public class FileUploadWriter extends Writer {
       , FileUpload fileUpload
       , String tableName
       , String fileFieldName
-      , String keyFieldName
-      , Object rowId
+      , List<String> primaryKey
+      , List<Object> rowId
       , String dataSourceJndiName
       , String moduleName
       , boolean transactionable)
@@ -119,7 +120,7 @@ public class FileUploadWriter extends Writer {
       final int WRITE_LENGTH = fileUpload.beginWrite(
           tableName
           , fileFieldName
-          , keyFieldName
+          , primaryKey
           , rowId
           );
       writeStream = new FileUploadWriter((TextFileUpload)fileUpload);
