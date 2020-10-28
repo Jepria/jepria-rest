@@ -8,6 +8,7 @@ import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Реализует запись в CLOB.
@@ -23,15 +24,45 @@ public class TextFileDownloadImpl extends AbstractFileDownload implements TextFi
   public int beginRead(
       String tableName
       , String fileFieldName
-      , List<String> primaryKey
-      , List<Object> rowIds
+      , Map primaryKeyMap
       )
       throws ApplicationException {
 
-    int result = -1;
+    int result;
     try {
 
-      super.largeObject = new TextLargeObject(tableName, fileFieldName, primaryKey, rowIds);
+      super.largeObject = new TextLargeObject(tableName, fileFieldName, primaryKeyMap);
+      result = ((TextLargeObject)super.largeObject).beginRead();
+    } catch (ApplicationException ex) {
+      cancel();
+      throw ex;
+    } catch (IllegalStateException ex) {
+      ex.printStackTrace();
+      throw new SystemException("begin write error", ex);
+    } finally {
+      storedContext = CallContext.detach();
+    }
+
+    return result;
+  }
+  /**
+   * Метод начинает чтение данных из LOB.
+   *
+   * @return рекомендуемая величина буфера
+   * @throws ApplicationException
+   */
+  @Override
+  public int beginRead(
+      String tableName
+      , String fileFieldName
+      , String whereClause
+  )
+      throws ApplicationException {
+
+    int result;
+    try {
+
+      super.largeObject = new TextLargeObject(tableName, fileFieldName, whereClause);
       result = ((TextLargeObject)super.largeObject).beginRead();
     } catch (ApplicationException ex) {
       cancel();

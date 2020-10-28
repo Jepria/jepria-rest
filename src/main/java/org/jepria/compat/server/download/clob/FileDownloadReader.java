@@ -12,6 +12,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <pre>
@@ -78,8 +79,7 @@ public class FileDownloadReader extends Reader {
    * @param fileDownload        интерфейс загрузки файла
    * @param tableName           имя таблицы, откуда берем СLOB
    * @param fileFieldName        имя атрибута в таблице, откуда берем СLOB
-   * @param primaryKey        PK в таблице tableName
-   * @param rowIds               идентификатор строки таблицы
+   * @param primaryKeyMap        PK в таблице tableName
    * @param dataSourceJndiName   имя источника данных
    * @throws IOException
    */
@@ -88,8 +88,7 @@ public class FileDownloadReader extends Reader {
       , FileDownload fileDownload
       , String tableName
       , String fileFieldName
-      , List<String> primaryKey
-      , List<Object> rowIds
+      , Map primaryKeyMap
       , String dataSourceJndiName
       , String moduleName
       , final boolean transactionable)
@@ -108,9 +107,101 @@ public class FileDownloadReader extends Reader {
       final int WRITE_LENGTH = fileDownload.beginRead(
           tableName
           , fileFieldName
-          , primaryKey
-          , rowIds
+          , primaryKeyMap
           );
+      readStream = new FileDownloadReader((TextFileDownload)fileDownload);
+      char[] readBuffer = new char[WRITE_LENGTH];
+      while (true) {
+        int size = readStream.read(readBuffer);
+        if (size == -1) {
+          break;
+        } else if (size == WRITE_LENGTH) {
+          bufferedWriter.write(readBuffer);
+        } else {
+          char[] lastBuffer = new char[size];
+          System.arraycopy(readBuffer, 0, lastBuffer, 0, size);
+          bufferedWriter.write(lastBuffer);
+        }
+      }
+    } catch (ApplicationException e) {
+      throw new SystemException(e.getMessage(), e);
+    } finally {
+      if(readStream != null) {
+        readStream.close();
+      }
+      if(bufferedWriter != null) {
+        bufferedWriter.close();
+      }
+      if(fileDownload != null) {
+        try {
+          fileDownload.endRead();
+
+          if (transactionable) {
+            if (fileDownload.isCancelled()) {
+              CallContext.rollback();
+            } else {
+              CallContext.commit();
+            }
+          }
+
+        } catch (SpaceException e) {
+          e.printStackTrace();
+        } catch (SQLException ex) {
+          throw new SystemException("end write error", ex);
+        } finally {
+          if (transactionable) {
+            CallContext.end();
+          }
+        }
+      }
+      if(writer != null) {
+        try {
+          writer.flush();
+          writer.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+
+  /**
+   * Загрузка файла в выходной поток из поля Clob таблицы базы данных.
+   *
+   * @param writer              выходной поток записи файла
+   * @param fileDownload        интерфейс загрузки файла
+   * @param tableName           имя таблицы, откуда берем СLOB
+   * @param fileFieldName       имя атрибута в таблице, откуда берем СLOB
+   * @param whereClause         SQL условие
+   * @param dataSourceJndiName  имя источника данных
+   * @throws IOException
+   */
+  public static void downloadFile(
+      Writer writer
+      , FileDownload fileDownload
+      , String tableName
+      , String fileFieldName
+      , String whereClause
+      , String dataSourceJndiName
+      , String moduleName
+      , final boolean transactionable)
+      throws IOException {
+
+    Reader readStream = null;
+    BufferedWriter bufferedWriter = null;
+    try {
+      // Здесь выполняется преобразование из байтов в символы
+      bufferedWriter = new BufferedWriter(writer);
+
+      if (transactionable) {
+        CallContext.begin(dataSourceJndiName, moduleName);
+      }
+
+      final int WRITE_LENGTH = fileDownload.beginRead(
+          tableName
+          , fileFieldName
+          , whereClause
+      );
       readStream = new FileDownloadReader((TextFileDownload)fileDownload);
       char[] readBuffer = new char[WRITE_LENGTH];
       while (true) {

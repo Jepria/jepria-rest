@@ -6,7 +6,7 @@ import org.jepria.compat.server.download.AbstractFileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
-import java.util.List;
+import java.util.Map;
 
 /**
  * Класс, реализующий выгрузку (download) бинарного файла.
@@ -23,15 +23,43 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
   public int beginRead(
       String tableName
       , String fileFieldName
-      , List<String> primaryKey
-      , List<Object> rowIds
+      , Map primaryKeyMap
       )
       throws ApplicationException {
 
     int result = -1;
     try {
 
-      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, primaryKey, rowIds);
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, primaryKeyMap);
+      result = ((BinaryLargeObject)super.largeObject).beginRead();
+    } catch (ApplicationException ex) {
+      cancel();
+      throw ex;
+    } finally {
+      storedContext = CallContext.detach();
+    }
+
+    return result;
+  }
+
+  /**
+   * Метод начинает чтение данных из LOB.
+   *
+   * @return рекомендуемая величина буфера
+   * @throws ApplicationException
+   */
+  @Override
+  public int beginRead(
+      String tableName
+      , String fileFieldName
+      , String whereClause
+  )
+      throws ApplicationException {
+
+    int result = -1;
+    try {
+
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, whereClause);
       result = ((BinaryLargeObject)super.largeObject).beginRead();
     } catch (ApplicationException ex) {
       cancel();

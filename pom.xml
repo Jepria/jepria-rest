@@ -35,7 +35,6 @@
   </properties>
 
   <dependencies>
-
     <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-server -->
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
@@ -110,13 +109,13 @@
       <groupId>com.oracle</groupId>
       <artifactId>ojdbc6dms</artifactId>
       <version>${ojdbc6dms.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.jepria</groupId>
       <artifactId>oauth-sdk</artifactId>
       <version>${oauth.sdk.version}</version>
     </dependency>
-
   </dependencies>
 
   <build>

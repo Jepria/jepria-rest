@@ -8,6 +8,7 @@ import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.jepria.compat.server.dao.CallContext;
@@ -31,17 +32,29 @@ public class BinaryLargeObject extends LargeObject {
    * 
    * @param tableName имя таблицы, в которую выполняется запись
    * @param fileFieldName имя поля, в которую выполняется запись
-   * @param primaryKey имя поля, идентифицирующего строку таблицы
-   * @param rowIds идентификатор строки таблицы
+   * @param primaryKeyMap имя поля, идентифицирующего строку таблицы
    */
-  public BinaryLargeObject(String tableName, String fileFieldName, List<String> primaryKey, List<Object> rowIds) {
-    super(tableName, fileFieldName, primaryKey, rowIds);
+  public BinaryLargeObject(String tableName, String fileFieldName, Map primaryKeyMap) {
+    super(tableName, fileFieldName, primaryKeyMap);
 
-    rowIds = rowIds.stream().map(rowId -> String.class.isInstance(rowId) ? "'" + rowId + "'" : rowId).collect(Collectors.toList());
-
-    String queryString = buildSqlString(primaryKey, rowIds);
+    String queryString = buildSqlString(primaryKeyMap);
 
     super.sqlClearLob = "update " + tableName + " set " + fileFieldName + "=empty_blob() where " + queryString;
+  }
+
+  /**
+   * Конструктор
+   *
+   * @param tableName имя таблицы, в которую выполняется запись
+   * @param fileFieldName имя поля, в которую выполняется запись
+   * @param whereClause SQL условие
+   */
+  public BinaryLargeObject(String tableName, String fileFieldName, String whereClause) {
+    super(tableName, fileFieldName, whereClause);
+
+    String queryString = buildSqlString(primaryKeyMap);
+
+    super.sqlClearLob = "update " + tableName + " set " + fileFieldName + "=empty_blob() where " + whereClause;
   }
 
   /**
@@ -67,7 +80,9 @@ public class BinaryLargeObject extends LargeObject {
             output = blob.setBinaryStream(0);
             result = WRITE_LENGTH;
       } else {
-        throw new ApplicationException("Record of table '" + tableName + "' with id '" + primaryKey + "' was not found", null);
+        throw new ApplicationException("Record of table '" + tableName + "' with id '" + primaryKeyMap != null ?
+            primaryKeyMap.entrySet().toArray().toString()
+                : whereClause + "' was not found", null);
       }
       return result;
     } catch (SQLException ex) {
@@ -97,7 +112,9 @@ public class BinaryLargeObject extends LargeObject {
             input = blob.getBinaryStream();
             result = WRITE_LENGTH;
       } else {
-        throw new ApplicationException("Record of table '" + tableName + "' with id '" + primaryKey + "' was not found", null);
+        throw new ApplicationException("Record of table '" + tableName + "' with id '" + primaryKeyMap != null ?
+            primaryKeyMap.entrySet().toArray().toString()
+            : whereClause + "' was not found", null);
       }
       return result;
     } catch (SQLException ex) {

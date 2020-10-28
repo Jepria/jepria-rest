@@ -7,6 +7,7 @@ import org.jepria.compat.server.upload.AbstractFileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Класс, реализующий загрузку (upload) файла в CLOB.
@@ -27,13 +28,35 @@ public class TextFileUploadImpl extends AbstractFileUpload implements TextFileUp
   public int beginWrite(
       String tableName
       , String fileFieldName
-      , List<String> primaryKey
-      , List<Object> rowId)
+      , Map primaryKeyMap)
       throws ApplicationException {
 
     int result = -1;
     try {
-      super.largeObject = new TextLargeObject(tableName, fileFieldName, primaryKey, rowId);
+      super.largeObject = new TextLargeObject(tableName, fileFieldName, primaryKeyMap);
+      result = ((TextLargeObject) super.largeObject).beginWrite();
+    } catch (ApplicationException ex) {
+      cancel();
+      throw ex;
+    } finally {
+      storedContext = CallContext.detach();
+    }
+
+    return result;
+  }
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int beginWrite(
+      String tableName
+      , String fileFieldName
+      , String whereClause)
+      throws ApplicationException {
+
+    int result = -1;
+    try {
+      super.largeObject = new TextLargeObject(tableName, fileFieldName, whereClause);
       result = ((TextLargeObject) super.largeObject).beginWrite();
     } catch (ApplicationException ex) {
       cancel();

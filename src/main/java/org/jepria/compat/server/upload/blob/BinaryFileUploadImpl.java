@@ -7,6 +7,7 @@ import org.jepria.compat.server.upload.AbstractFileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Реализует загрузку (upload) бинарного файла.
@@ -27,13 +28,29 @@ public class BinaryFileUploadImpl extends AbstractFileUpload implements BinaryFi
   public int beginWrite(
       String tableName
       , String fileFieldName
-      , List<String> primaryKey
-      , List<Object> rowId)
+      , Map primaryKeyMap)
       throws ApplicationException {
 
     int result = -1;
     try {
-      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, primaryKey, rowId);
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, primaryKeyMap);
+      result = ((BinaryLargeObject) super.largeObject).beginWrite();
+    } catch (ApplicationException ex) {
+      cancel();
+      throw ex;
+    } finally {
+      storedContext = CallContext.detach();
+    }
+
+    return result;
+  }
+
+  @Override
+  public int beginWrite(String tableName, String fileFieldName, String whereClause) throws ApplicationException {
+
+    int result = -1;
+    try {
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, whereClause);
       result = ((BinaryLargeObject) super.largeObject).beginWrite();
     } catch (ApplicationException ex) {
       cancel();

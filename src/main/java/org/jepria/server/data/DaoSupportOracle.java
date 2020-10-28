@@ -14,6 +14,7 @@ import org.jepria.compat.shared.exceptions.ApplicationException;
 import java.io.*;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 public class DaoSupportOracle implements DaoSupport {
   @Override
@@ -115,7 +116,7 @@ public class DaoSupportOracle implements DaoSupport {
   }
 
   @Override
-  public void deleteClob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues) {
+  public void deleteClob(String tableName, String dataFieldName, Map primaryKeyMap) {
     // TODO stub implementation
 
     final Reader emptyReader = new Reader() {
@@ -128,11 +129,11 @@ public class DaoSupportOracle implements DaoSupport {
       }
     };
 
-    uploadClob(tableName, dataFieldName, primaryKey, primaryKeyValues, emptyReader);
+    uploadClob(tableName, dataFieldName, primaryKeyMap, emptyReader);
   }
 
   @Override
-  public void uploadClob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues, Reader reader) {
+  public void uploadClob(String tableName, String dataFieldName, Map primaryKeyMap, Reader reader) {
     // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
     try {
       FileUploadWriter.uploadFile(
@@ -140,7 +141,7 @@ public class DaoSupportOracle implements DaoSupport {
               , new TextFileUploadImpl()
               , tableName
               , dataFieldName
-              , primaryKey, primaryKeyValues // internally transformed to "where [whereClause] and 1=1"
+              , primaryKeyMap // internally transformed to "where [whereClause] and 1=1"
               , null
               , null
               , false
@@ -151,7 +152,7 @@ public class DaoSupportOracle implements DaoSupport {
   }
 
   @Override
-  public void deleteBlob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues) {
+  public void deleteBlob(String tableName, String dataFieldName, Map primaryKeyMap) {
     // TODO stub implementation
 
     final InputStream emptyStream = new InputStream() {
@@ -161,11 +162,11 @@ public class DaoSupportOracle implements DaoSupport {
       }
     };
 
-    uploadBlob(tableName, dataFieldName, primaryKey, primaryKeyValues, emptyStream);
+    uploadBlob(tableName, dataFieldName, primaryKeyMap, emptyStream);
   }
 
   @Override
-  public void uploadBlob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues, InputStream stream) {
+  public void uploadBlob(String tableName, String dataFieldName, Map primaryKeyMap, InputStream stream) {
     // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
     try {
       FileUploadStream.uploadFile(
@@ -173,7 +174,7 @@ public class DaoSupportOracle implements DaoSupport {
               , new BinaryFileUploadImpl() // transaction logic is performed by org.jepria.compat.server.dao.transaction.TransactionFactory.TransactionInvocationHandler Dao wrapper
               , tableName
               , dataFieldName
-              , primaryKey, primaryKeyValues // internally transformed to "where [whereClause] and 1=1"
+              , primaryKeyMap // internally transformed to "where [whereClause] and 1=1"
               , null
               , null
               , false
@@ -184,7 +185,7 @@ public class DaoSupportOracle implements DaoSupport {
   }
 
   @Override
-  public void downloadClob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues, Writer writer) {
+  public void downloadClob(String tableName, String dataFieldName, Map primaryKeyMap, Writer writer) {
     // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
     try {
       FileDownloadReader.downloadFile(
@@ -192,7 +193,7 @@ public class DaoSupportOracle implements DaoSupport {
               , new TextFileDownloadImpl()
               , tableName
               , dataFieldName
-              , primaryKey, primaryKeyValues
+              , primaryKeyMap
               , null
               , null
               , false);
@@ -202,7 +203,7 @@ public class DaoSupportOracle implements DaoSupport {
   }
 
   @Override
-  public void downloadBlob(String tableName, String dataFieldName, List<String> primaryKey, List<Object> primaryKeyValues, OutputStream stream) {
+  public void downloadBlob(String tableName, String dataFieldName, Map primaryKeyMap, OutputStream stream) {
     // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
     try {
       FileDownloadStream.downloadFile(
@@ -210,10 +211,114 @@ public class DaoSupportOracle implements DaoSupport {
               , new BinaryFileDownloadImpl()
               , tableName
               , dataFieldName
-              , primaryKey, primaryKeyValues
+              , primaryKeyMap
               , null
               , null
               , false);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+  @Override
+  public void deleteClob(String tableName, String dataFieldName, String whereClause) {
+    // TODO stub implementation
+
+    final Reader emptyReader = new Reader() {
+      @Override
+      public int read(char[] cbuf, int off, int len) throws IOException {
+        return -1;
+      }
+      @Override
+      public void close() throws IOException {
+      }
+    };
+
+    uploadClob(tableName, dataFieldName, whereClause, emptyReader);
+  }
+
+  @Override
+  public void uploadClob(String tableName, String dataFieldName, String whereClause, Reader reader) {
+    // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
+    try {
+      FileUploadWriter.uploadFile(
+          reader
+          , new TextFileUploadImpl()
+          , tableName
+          , dataFieldName
+          , whereClause
+          , null // internally transformed to "where [whereClause] and 1=1"
+          , null
+          , false
+      );
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void deleteBlob(String tableName, String dataFieldName, String whereClause) {
+    // TODO stub implementation
+
+    final InputStream emptyStream = new InputStream() {
+      @Override
+      public int read() throws IOException {
+        return -1;
+      }
+    };
+
+    uploadBlob(tableName, dataFieldName, whereClause, emptyStream);
+  }
+
+  @Override
+  public void uploadBlob(String tableName, String dataFieldName, String whereClause, InputStream stream) {
+    // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
+    try {
+      FileUploadStream.uploadFile(
+          stream
+          , new BinaryFileUploadImpl() // transaction logic is performed by org.jepria.compat.server.dao.transaction.TransactionFactory.TransactionInvocationHandler Dao wrapper
+          , tableName
+          , dataFieldName
+          , whereClause
+          , null
+          , null
+          , false
+      );
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void downloadClob(String tableName, String dataFieldName, String whereClause, Writer writer) {
+    // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
+    try {
+      FileDownloadReader.downloadFile(
+          writer
+          , new TextFileDownloadImpl()
+          , tableName
+          , dataFieldName
+          ,  whereClause
+          , null
+          , null
+          , false);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void downloadBlob(String tableName, String dataFieldName, String whereClause, OutputStream stream) {
+    // TODO stub implementation from org.jepria.compat.server.upload.JepUploadServlet
+    try {
+      FileDownloadStream.downloadFile(
+          stream
+          , new BinaryFileDownloadImpl()
+          , tableName
+          , dataFieldName
+          ,  whereClause
+          , null
+          , null
+          , false);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

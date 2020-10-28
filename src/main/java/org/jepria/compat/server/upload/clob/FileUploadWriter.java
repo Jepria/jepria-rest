@@ -4,7 +4,6 @@ import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.server.upload.FileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
-import org.jepria.compat.shared.exceptions.NotImplementedYetException;
 import org.jepria.compat.shared.exceptions.SystemException;
 
 import java.io.BufferedReader;
@@ -12,7 +11,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -89,8 +87,7 @@ public class FileUploadWriter extends Writer {
    * @param fileUpload          интерфейс выгрузки файла
    * @param tableName           имя таблицы, откуда берем СLOB
    * @param fileFieldName        имя атрибута в таблице, откуда берем СLOB
-   * @param primaryKey        PK в таблице tableName
-   * @param rowId               идентификатор строки таблицы
+   * @param primaryKeyMap        PK в таблице tableName
    * @param dataSourceJndiName   имя источника данных
    * @param moduleName       имя модуля
    * @throws IOException
@@ -100,8 +97,7 @@ public class FileUploadWriter extends Writer {
       , FileUpload fileUpload
       , String tableName
       , String fileFieldName
-      , List<String> primaryKey
-      , List<Object> rowId
+      , Map primaryKeyMap
       , String dataSourceJndiName
       , String moduleName
       , boolean transactionable)
@@ -120,9 +116,7 @@ public class FileUploadWriter extends Writer {
       final int WRITE_LENGTH = fileUpload.beginWrite(
           tableName
           , fileFieldName
-          , primaryKey
-          , rowId
-          );
+          , primaryKeyMap);
       writeStream = new FileUploadWriter((TextFileUpload)fileUpload);
       char[] readBuffer = new char[WRITE_LENGTH];
       while (true) {
@@ -171,26 +165,87 @@ public class FileUploadWriter extends Writer {
   }
 
   /**
-   * Загрузка файла из входного потока в поле Clob таблицы базы данных по сложному первичному ключу.
-   * 
+   * Загрузка файла из входного потока в поле Clob таблицы базы данных.
+   *
    * @param reader               входной поток чтения файла
-   * @param fileUpload          интерфейс выгрузки файла
-   * @param tableName           имя таблицы, откуда берем СLOB
+   * @param fileUpload           интерфейс выгрузки файла
+   * @param tableName            имя таблицы, откуда берем СLOB
    * @param fileFieldName        имя атрибута в таблице, откуда берем СLOB
-   * @param primaryKeyMap        PK в таблице tableName
-   * @param dataSourceJndiName     имя источника данных
-   * @param moduleName         имя модуля
+   * @param whereClause          SQL условие
+   * @param dataSourceJndiName   имя источника данных
+   * @param moduleName           имя модуля
+   * @throws IOException
    */
   public static void uploadFile(
       Reader reader
       , FileUpload fileUpload
       , String tableName
       , String fileFieldName
-      , Map<String, Object> primaryKeyMap
+      , String whereClause
       , String dataSourceJndiName
       , String moduleName
-      , boolean transactionable) {
-    throw new NotImplementedYetException();
+      , boolean transactionable)
+      throws IOException {
+
+    Writer writeStream = null;
+    BufferedReader bufferedReader = null;
+    try {
+      // Здесь выполняется преобразование из байтов в символы
+      bufferedReader = new BufferedReader(reader);
+
+      if (transactionable) {
+        CallContext.begin(dataSourceJndiName, moduleName);
+      }
+
+      final int WRITE_LENGTH = fileUpload.beginWrite(
+          tableName
+          , fileFieldName
+          , whereClause);
+      writeStream = new FileUploadWriter((TextFileUpload)fileUpload);
+      char[] readBuffer = new char[WRITE_LENGTH];
+      while (true) {
+        int size = bufferedReader.read(readBuffer);
+        if (size == -1) {
+          break;
+        } else if (size == WRITE_LENGTH) {
+          writeStream.write(readBuffer);
+        } else {
+          char[] lastBuffer = new char[size];
+          System.arraycopy(readBuffer, 0, lastBuffer, 0, size);
+          writeStream.write(lastBuffer);
+        }
+      }
+
+    } catch (ApplicationException e) {
+      throw new SystemException(e.getMessage(), e);
+    } finally {
+      if(bufferedReader != null) {
+        bufferedReader.close();
+      }
+      if(writeStream != null) {
+        writeStream.close();
+      }
+      try {
+        fileUpload.endWrite();
+
+        if (transactionable) {
+          if (fileUpload.isCancelled()) {
+            CallContext.rollback();
+          } else {
+            CallContext.commit();
+          }
+        }
+
+      } catch (SpaceException e) {
+        e.printStackTrace();
+      } catch (SQLException ex) {
+        throw new SystemException("end write error", ex);
+      } finally {
+        if (transactionable) {
+          CallContext.end();
+        }
+      }
+    }
   }
 
 }

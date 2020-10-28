@@ -27,7 +27,9 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
 
 import static org.jepria.compat.server.JepRiaServerConstant.JEP_RIA_RESOURCE_BUNDLE_NAME;
 import static org.jepria.compat.shared.JepRiaConstant.*;
@@ -63,7 +65,7 @@ public class UploadServlet extends HttpServlet {
   /**
    * Имя поля в таблице
    */
-  private final String fileFieldName;
+  private final Map<String, String> fileFieldNameMap;
   /**
    * Имя таблицы
    */
@@ -71,11 +73,7 @@ public class UploadServlet extends HttpServlet {
   /**
    * Тип файла
    */
-  private final String fileType;
-  /**
-   * Имена полей первичного ключа
-   */
-  private final List<String> primaryKeyFieldNames;
+  private final Map<String, String> fileTypeMap;
 
   /**
    * Создаёт сервлет загрузки файлов на сервер.<br>
@@ -85,11 +83,10 @@ public class UploadServlet extends HttpServlet {
    */
   public UploadServlet(
       String tableName,
-      String fileFieldName,
-      List<String> primaryKeyFieldNames,
-      String fileType,
+      Map<String, String> fileFieldNames,
+      Map<String, String> fileFieldTypes,
       String dataSourceJndiName) {
-    this(tableName, fileFieldName, primaryKeyFieldNames, fileType, dataSourceJndiName, JepRiaServerConstant.DEFAULT_ENCODING, true);
+    this(tableName, fileFieldNames, fileFieldTypes, dataSourceJndiName, JepRiaServerConstant.DEFAULT_ENCODING, true);
   }
 
   /**
@@ -100,13 +97,12 @@ public class UploadServlet extends HttpServlet {
    */
   public UploadServlet(
       String tableName,
-      String fileFieldName,
-      List<String> primaryKeyFieldNames,
-      String fileType,
+      Map<String, String> fileFieldNames,
+      Map<String, String> fileFieldTypes,
       String dataSourceJndiName,
       Charset textFileCharset) {
 
-    this(tableName, fileFieldName, primaryKeyFieldNames, fileType, dataSourceJndiName, textFileCharset, true);
+    this(tableName, fileFieldNames, fileFieldTypes, dataSourceJndiName, textFileCharset, true);
   }
 
   /**
@@ -117,9 +113,8 @@ public class UploadServlet extends HttpServlet {
    */
   public UploadServlet(
       String tableName,
-      String fileFieldName,
-      List<String> primaryKeyFieldNames,
-      String fileType,
+      Map<String, String> fileFieldNames,
+      Map<String, String> fileFieldTypes,
       String dataSourceJndiName,
       Charset textFileCharset,
       boolean transactionable) {
@@ -127,10 +122,9 @@ public class UploadServlet extends HttpServlet {
     this.dataSourceJndiName = dataSourceJndiName;
     this.textFileCharset = textFileCharset;
     this.transactionable = transactionable;
-    this.fileType = fileType;
-    this.primaryKeyFieldNames = Collections.unmodifiableList(primaryKeyFieldNames);
+    this.fileTypeMap = fileFieldTypes;
     this.tableName = tableName;
-    this.fileFieldName = fileFieldName;
+    this.fileFieldNameMap = fileFieldNames;
   }
 
   /**
@@ -161,58 +155,58 @@ public class UploadServlet extends HttpServlet {
         if (items.size() >= 2) { // Должно быть два параметра: файл и привязка к полю записи таблицы БД
 
           FileItem fileSizeFormField = getFormField(items, FILE_SIZE_HIDDEN_FIELD_NAME);
-          String fileSizeAsString = fileSizeFormField.getString();
+          String fileSizeAsString = fileSizeFormField != null ? fileSizeFormField.getString() : null;
           Integer specifiedFileSize = JepRiaUtil.isEmpty(fileSizeAsString) ? null : Integer.decode(fileSizeAsString) * 1024; // in Kbytes
 
           StringBuilder errorMessage = new StringBuilder();
 
           for (FileItem fileItem : items) {
-            if (!fileItem.isFormField()) {
-              // check file size if necessary
-              long fileSize = fileItem.getSize();
-              if (!JepRiaUtil.isEmpty(specifiedFileSize) && fileSize > specifiedFileSize) {
-                ResourceBundle resource = ResourceBundle.getBundle(JEP_RIA_RESOURCE_BUNDLE_NAME);
-                response.setCharacterEncoding("UTF-8");
-                response.setContentType("text/plain; charset=UTF-8");
-                response.getWriter().print(MessageFormat.format(resource.getString("errors.file.uploadFileSizeError"), specifiedFileSize, fileSize));
-                response.flushBuffer();
-                return;
-              }
+            // check file size if necessary
+            long fileSize = fileItem.getSize();
+            if (!JepRiaUtil.isEmpty(specifiedFileSize) && fileSize > specifiedFileSize) {
+              ResourceBundle resource = ResourceBundle.getBundle(JEP_RIA_RESOURCE_BUNDLE_NAME);
+              response.setCharacterEncoding("UTF-8");
+              response.setContentType("text/plain; charset=UTF-8");
+              response.getWriter().print(MessageFormat.format(resource.getString("errors.file.uploadFileSizeError"), specifiedFileSize, fileSize));
+              response.flushBuffer();
+              return;
+            }
 
-              String fileName = null;
+            String fileName = null;
+            try {
+              fileName = fileItem.getName();
+            } catch (InvalidFileNameException e) {
+              fileName = e.getName();
+            }
+
+            FileItem isDeletedFormField = getFormField(items, IS_DELETED_FILE_HIDDEN_FIELD_NAME);
+            boolean isDeleted = isDeletedFormField != null &&
+                Boolean.valueOf(isDeletedFormField.getString());
+            String fieldName = this.fileFieldNameMap.get(fileItem.getFieldName());
+            String fileType = this.fileTypeMap.get(fileItem.getFieldName());
+
+            if (!JepRiaUtil.isEmpty(fileName) || isDeleted) {
               try {
-                fileName = fileItem.getName();
-              } catch (InvalidFileNameException e) {
-                fileName = e.getName();
-              }
-
-              FileItem isDeletedFormField = getFormField(items, IS_DELETED_FILE_HIDDEN_FIELD_NAME);
-              boolean isDeleted = isDeletedFormField != null &&
-                  Boolean.valueOf(isDeletedFormField.getString());
-
-              if (!JepRiaUtil.isEmpty(fileName) || isDeleted) {
-                try {
-                  if (fileType == BINARY_FILE) {
-                    uploadBinary(
-                        fileItem.getInputStream(),
-                        tableName,
-                        fileFieldName,
-                        getPrimaryKeyMap(items));
-                  } else if (fileType == TEXT_FILE) {
-                    uploadText(
-                        fileItem.getInputStream(),
-                        tableName,
-                        fileFieldName,
-                        getPrimaryKeyMap(items));
-                  } else {
-                    throw new UnsupportedException(this.getClass() + ".doPost(): " + fileType + " field type does not supported for upload.");
-                  }
-                } catch (Throwable th) {
-                  String message = "doPost().upload error in '" + fileFieldName + "' field: " + th.getMessage();
-                  logger.error(message, th);
-                  errorMessage.append(message);
-                  errorMessage.append("\n");
+                if (fileType == BINARY_FILE) {
+                  uploadBinary(
+                      fileItem.getInputStream(),
+                      tableName,
+                      fieldName,
+                      getPrimaryKeyMap(items));
+                } else if (fileType == TEXT_FILE) {
+                  uploadText(
+                      fileItem.getInputStream(),
+                      tableName,
+                      fieldName,
+                      getPrimaryKeyMap(items));
+                } else {
+                  throw new UnsupportedException(this.getClass() + ".doPost(): " + fileType + " field type does not supported for upload.");
                 }
+              } catch (Throwable th) {
+                String message = "doPost().upload error in '" + fieldName + "' field: " + th.getMessage();
+                logger.error(message, th);
+                errorMessage.append(message);
+                errorMessage.append("\n");
               }
             }
           }
@@ -282,8 +276,7 @@ public class UploadServlet extends HttpServlet {
         new BinaryFileUploadImpl(),
         tableName,
         fileFieldName,
-        primaryKeyFieldNames,
-        new ArrayList(primaryKeyMap.values()),
+        primaryKeyMap,
         this.dataSourceJndiName,
         this.moduleName,
         transactionable);
@@ -311,8 +304,7 @@ public class UploadServlet extends HttpServlet {
         new TextFileUploadImpl(),
         tableName,
         fileFieldName,
-        primaryKeyFieldNames,
-        new ArrayList(primaryKeyMap.values()),
+        primaryKeyMap,
         this.dataSourceJndiName,
         this.moduleName,
         transactionable);

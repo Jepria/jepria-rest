@@ -1,5 +1,6 @@
 package org.jepria.compat.server.download;
 
+import com.google.gson.Gson;
 import org.apache.log4j.Logger;
 import org.jepria.compat.server.JepRiaServerConstant;
 import org.jepria.compat.server.download.blob.BinaryFileDownloadImpl;
@@ -9,6 +10,7 @@ import org.jepria.compat.server.download.clob.TextFileDownloadImpl;
 import org.jepria.compat.server.util.JepServerUtil;
 import org.jepria.compat.shared.exceptions.UnsupportedException;
 import org.jepria.compat.shared.util.JepRiaUtil;
+import org.jepria.server.data.RecordIdParser;
 
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
@@ -23,9 +25,8 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import static org.jepria.compat.shared.JepRiaConstant.*;
 
@@ -54,7 +55,7 @@ public class DownloadServlet extends HttpServlet {
   /**
    * Имя поля в таблице
    */
-  private final String fileFieldName;
+  private final Map<String, String> fileFieldNameMap;
   /**
    * Имя таблицы
    */
@@ -62,11 +63,7 @@ public class DownloadServlet extends HttpServlet {
   /**
    * Тип файла
    */
-  private final String fileType;
-  /**
-   * Имена полей первичного ключа
-   */
-  private final List<String> primaryKeyFieldNames;
+  private final Map<String, String> fileTypeMap;
 
   /**
    * Кодирует строку в формат, подходящий для помещения в заголовок Content-disposition.<br>
@@ -112,17 +109,15 @@ public class DownloadServlet extends HttpServlet {
    */
   public DownloadServlet(
       String tableName,
-      String fileFieldName,
-      List<String> primaryKeyFieldNames,
-      String fileType,
+      Map<String, String> fileFieldNames,
+      Map<String, String> fileFieldTypes,
       String dataSourceJndiName,
       Charset textFileCharset) {
     this.dataSourceJndiName = dataSourceJndiName;
     this.textFileCharset = textFileCharset;
-    this.fileType = fileType;
-    this.primaryKeyFieldNames = Collections.unmodifiableList(primaryKeyFieldNames);
+    this.fileTypeMap = fileFieldTypes;
     this.tableName = tableName;
-    this.fileFieldName = fileFieldName;
+    this.fileFieldNameMap = fileFieldNames;
   }
 
   /**
@@ -133,12 +128,11 @@ public class DownloadServlet extends HttpServlet {
    */
   public DownloadServlet(
       String tableName,
-      String fileFieldName,
-      List<String> primaryKeyFieldNames,
-      String fileType,
+      Map<String, String> fileFieldNames,
+      Map<String, String> fileFieldTypes,
       String dataSourceJndiName) {
 
-    this(tableName, fileFieldName, primaryKeyFieldNames, fileType, dataSourceJndiName, JepRiaServerConstant.DEFAULT_ENCODING);
+    this(tableName, fileFieldNames, fileFieldTypes, dataSourceJndiName, JepRiaServerConstant.DEFAULT_ENCODING);
   }
 
   /**
@@ -153,6 +147,42 @@ public class DownloadServlet extends HttpServlet {
     moduleName = JepServerUtil.getModuleName(getServletConfig());
   }
 
+  /**
+   * Создание запроса на скачивание, для браузера IE, если query string слишком большой длины.
+   * принимает JSON:
+   * {
+   *   fileName: "",
+   *   ext: "",
+   *   fileNamePrefix: "",
+   *   mimeType: "",
+   *   fileType: "",
+   *   recordKey: "",
+   *   fieldName: "",
+   *   contentDisposition: ""
+   * }
+   * @param req
+   * @param resp
+   * @throws ServletException
+   * @throws IOException
+   */
+  @Override
+  public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    Gson gson = new Gson();
+    Map<String, Object> downloadRequest = gson.fromJson(req.getReader(), Map.class);
+    Integer downloadId = (new Random()).nextInt();
+    HttpSession session = req.getSession();
+    session.setAttribute(DOWNLOAD_FILE_NAME + downloadId, downloadRequest.get(DOWNLOAD_FILE_NAME));
+    session.setAttribute(DOWNLOAD_EXTENSION + downloadId, downloadRequest.get(DOWNLOAD_EXTENSION));
+    session.setAttribute(DOWNLOAD_FILE_NAME_PREFIX + downloadId, downloadRequest.get(DOWNLOAD_FILE_NAME_PREFIX));
+    session.setAttribute(DOWNLOAD_MIME_TYPE + downloadId, downloadRequest.get(DOWNLOAD_MIME_TYPE));
+    session.setAttribute(DOWNLOAD_FILE_TYPE + downloadId, downloadRequest.get(DOWNLOAD_FILE_TYPE));
+    session.setAttribute(DOWNLOAD_RECORD_KEY + downloadId, downloadRequest.get(DOWNLOAD_RECORD_KEY));
+    session.setAttribute(DOWNLOAD_FIELD_NAME + downloadId, downloadRequest.get(DOWNLOAD_FIELD_NAME));
+    session.setAttribute(DOWNLOAD_CONTENT_DISPOSITION + downloadId, downloadRequest.get(DOWNLOAD_CONTENT_DISPOSITION));
+    resp.setStatus(HttpServletResponse.SC_CREATED);
+    resp.setHeader("Location", req.getRequestURL().toString() + "/" + downloadId);
+  }
+
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
@@ -162,38 +192,41 @@ public class DownloadServlet extends HttpServlet {
       response.reset();
 
       String downloadId = request.getParameter(DOWNLOAD_ID);
-      String fileName, fileNamePrefix, fileExtension, mimeType, contentDisposition, fieldName, fileType;
-      List<String> recordKey;
+      String fileName, fileNamePrefix, fileExtension, mimeType, contentDisposition, fieldName, fileType, recordKey;
       if (downloadId != null) {
         HttpSession session = request.getSession();
         fileName = (String) session.getAttribute(DOWNLOAD_FILE_NAME + downloadId);
         fileExtension = (String) session.getAttribute(DOWNLOAD_EXTENSION + downloadId);
         fileNamePrefix = (String) session.getAttribute(DOWNLOAD_FILE_NAME_PREFIX + downloadId);
         mimeType = (String) session.getAttribute(DOWNLOAD_MIME_TYPE + downloadId);
-        fileType = (String) session.getAttribute(DOWNLOAD_FILE_TYPE + downloadId);
-        recordKey = (List<String>) session.getAttribute(DOWNLOAD_RECORD_KEY + downloadId);
+        recordKey = (String) session.getAttribute(DOWNLOAD_RECORD_KEY + downloadId);
         fieldName = (String) session.getAttribute(DOWNLOAD_FIELD_NAME + downloadId);
         contentDisposition = (String) session.getAttribute(DOWNLOAD_CONTENT_DISPOSITION + downloadId);
       } else {
         fileName = request.getParameter(DOWNLOAD_FILE_NAME);
         fileNamePrefix = request.getParameter(DOWNLOAD_FILE_NAME_PREFIX);
         fileExtension = request.getParameter(DOWNLOAD_EXTENSION);
-        fileType = request.getParameter(DOWNLOAD_FILE_TYPE);
         mimeType = request.getParameter(DOWNLOAD_MIME_TYPE);
-        recordKey = Arrays.asList(request.getParameterValues(DOWNLOAD_RECORD_KEY));
+        recordKey = request.getParameter(DOWNLOAD_RECORD_KEY);
         fieldName = request.getParameter(DOWNLOAD_FIELD_NAME);
         contentDisposition = request.getParameter(DOWNLOAD_CONTENT_DISPOSITION);
       }
 
-      fieldName = fieldName != null ? fieldName : this.fileFieldName;
-      fileType = fileType != null ? fileType : this.fileType;
+      fieldName = this.fileFieldNameMap.get(fieldName);
+      fileType = this.fileTypeMap.get(fieldName);
       response.setContentType(mimeType + ";charset=" + textFileCharset);
       addAntiCachingHeaders(response);
+
+      Map<String, String> primaryKeyMap = RecordIdParser.parseComposite(recordKey);
 
       if (DOWNLOAD_CONTENT_DISPOSITION_INLINE.equals(contentDisposition)) {
         response.setHeader("Content-disposition", "inline");
       } else if (DOWNLOAD_CONTENT_DISPOSITION_ATTACHMENT.equals(contentDisposition)) {
-        setAttachedFileName(response, fileName, fileExtension, fileNamePrefix, recordKey.stream().toArray(String[]::new).toString());
+        setAttachedFileName(response,
+            fileName,
+            fileExtension,
+            fileNamePrefix,
+            primaryKeyMap.entrySet().toArray().toString());
       }
 
       ServletOutputStream outputStream = response.getOutputStream();
@@ -202,12 +235,12 @@ public class DownloadServlet extends HttpServlet {
         downloadBinary(outputStream,
             tableName,
             fieldName,
-            recordKey);
+            primaryKeyMap);
       } else if (fileType.equals(TEXT_FILE)) {
         downloadText(outputStream,
             tableName,
             fieldName,
-            recordKey);
+            primaryKeyMap);
       } else {
         throw new UnsupportedException(this.getClass() + ".doGet(): " + fileType + " field type does not supported for download.");
       }
@@ -276,7 +309,7 @@ public class DownloadServlet extends HttpServlet {
       OutputStream outputStream
       , String tableName
       , String fileFieldName
-      , List recordKey
+      , Map recordKey
   ) throws IOException, NamingException {
 
     FileDownloadStream.downloadFile(
@@ -284,7 +317,6 @@ public class DownloadServlet extends HttpServlet {
         new BinaryFileDownloadImpl(),
         tableName,
         fileFieldName,
-        primaryKeyFieldNames,
         recordKey,
         this.dataSourceJndiName,
         this.moduleName,
@@ -305,7 +337,7 @@ public class DownloadServlet extends HttpServlet {
       OutputStream outputStream
       , String tableName
       , String fileFieldName
-      , List recordKey
+      , Map recordKey
   ) throws IOException, NamingException {
 
     FileDownloadReader.downloadFile(
@@ -313,7 +345,6 @@ public class DownloadServlet extends HttpServlet {
         new TextFileDownloadImpl(),
         tableName,
         fileFieldName,
-        primaryKeyFieldNames,
         recordKey,
         this.dataSourceJndiName,
         this.moduleName,

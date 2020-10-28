@@ -112,9 +112,9 @@ public class JepRiaConstant {
   /**
    * Тип двичного файла
    */
-  public static final String BINARY_FILE = "BINARY_FILE";
+  public static final String BINARY_FILE = "blob";
   /**
    * Тип текстового файла
    */
-  public static final String TEXT_FILE = "TEXT_FILE";;
+  public static final String TEXT_FILE = "clob";
 }
