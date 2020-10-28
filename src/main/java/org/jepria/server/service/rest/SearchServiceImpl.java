@@ -52,7 +52,7 @@ public class SearchServiceImpl implements SearchService {
     // create single searchUID for a tuple {session,entity}
     searchUID = Integer.toHexString(Objects.hash(session.get().getId(), entityName)); // TODO is this UID unique enough?
     
-    sessionAttrKeyPrefix = "SearchService;entity=" + entityName + ";searchId=" + searchUID;
+    sessionAttrKeyPrefix = "SearchService;searchId=" + searchUID;
   }
 
   private final String searchUID;

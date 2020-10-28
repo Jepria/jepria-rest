@@ -1,7 +1,10 @@
 package org.jepria.compat.server.download.excel;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.log4j.Logger;
 import org.jepria.server.data.RecordDefinition;
+import org.jepria.server.service.rest.SearchServiceImpl;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -10,6 +13,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -57,34 +62,62 @@ public class ExcelServlet extends HttpServlet {
   protected static final Logger logger = Logger.getLogger(ExcelServlet.class.getName());
 
   /**
-   * Определение записи набора данных.
-   */
-  protected RecordDefinition recordDefinition = null;
-
-  /**
    * Создает сервлет для отображения набора данных в Excel.<br/>
    * Конструктор вызывается с указанием {@link RecordDefinition определения записи} в прикладных модулях
    * из <code>public</code> конструктора без параметров.
-   *
-   * @param recordDefinition определение записи набора данных
    */
-  public ExcelServlet(RecordDefinition recordDefinition) {
-    this.recordDefinition = recordDefinition;
-  }
+  public ExcelServlet() {}
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
-    logger.trace("BEGIN Generate Excel Report");
-
-    String listUIDParameter = request.getParameter(LIST_UID_REQUEST_PARAMETER);
-    if (isEmpty(listUIDParameter)) {
-      response.setContentType("text/html;charset=UTF-8");
-      response.getOutputStream().print("<b>Request parameter '" + LIST_UID_REQUEST_PARAMETER + "' is mandatory!</b>");
+    Gson gson = new Gson();
+    Type type = new TypeToken<Map<String, String>>(){}.getType();
+    Map<String, ?> requestBody = gson.fromJson(request.getReader(), type);
+    String searchIdParameter = String.valueOf(requestBody.get(SEARCH_ID_PARAMETER));
+    if (isEmpty(searchIdParameter)) {
+      response.setStatus(400);
+      response.getOutputStream().print("Request parameter '" + SEARCH_ID_PARAMETER + "' is mandatory");
       return;
     }
 
-    Integer listUID = Integer.valueOf(listUIDParameter);
+    HttpSession session = request.getSession();
+
+    session.setAttribute(EXCEL_REPORT_HEADERS + searchIdParameter, requestBody.get(EXCEL_REPORT_HEADERS));
+    session.setAttribute(EXCEL_REPORT_FIELDS + searchIdParameter, requestBody.get(EXCEL_REPORT_FIELDS));
+
+    response.setStatus(201);
+  }
+
+  /**
+   * Фабричный метод, формирующий объект Excel-отчёта.<br/>
+   * По умолчанию создаёт объект класса ExcelReport. Если в прикладном модуле для этих цедей
+   * используется собственный класс, то данный метод необходимо переопределить.
+   *
+   * @param reportFields  список идентификаторов полей для формирования выгрузки
+   * @param reportHeaders список заголовков таблицы в Excel-файле
+   * @param records       спиок записей для выгрузки
+   * @return объект Excel-отчёта
+   */
+  protected ExcelReport createExcelReport(List<String> reportFields, List<String> reportHeaders, List<?> records) {
+    return new ExcelReport(reportFields, reportHeaders, records);
+  }
+
+  @Override
+  protected void doGet(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    logger.trace("BEGIN Generate Excel Report");
+
+    String searchIdParameter = request.getParameter(SEARCH_ID_PARAMETER);
+    if (isEmpty(searchIdParameter)) {
+      response.setContentType("text/html;charset=UTF-8");
+      response.getOutputStream().print("<b>Request parameter '" + SEARCH_ID_PARAMETER + "' is mandatory!</b>");
+      return;
+    }
+
+    String[] reportHeadersParameter = request.getParameterValues(EXCEL_REPORT_HEADERS);
+    String[] reportFieldsParameter = request.getParameterValues(EXCEL_REPORT_FIELDS);
+
     HttpSession session = request.getSession();
 
     String fileName = request.getParameter(EXCEL_FILE_NAME_PARAMETER);
@@ -94,15 +127,19 @@ public class ExcelServlet extends HttpServlet {
     logger.trace("fileName=" + fileName);
 
     @SuppressWarnings("unchecked")
-    List<String> reportHeaders = (List<String>) session.getAttribute(EXCEL_REPORT_HEADERS_SESSION_ATTRIBUTE + listUID);
+    List<String> reportHeaders = reportHeadersParameter != null ?
+        Arrays.asList(reportHeadersParameter)
+        : (List<String>) session.getAttribute(EXCEL_REPORT_HEADERS + searchIdParameter);
     logger.trace("reportHeaders = " + reportHeaders);
 
     @SuppressWarnings("unchecked")
-    List<String> reportFields = (List<String>) session.getAttribute(EXCEL_REPORT_FIELDS_SESSION_ATTRIBUTE + listUID);
+    List<String> reportFields = reportFieldsParameter != null ?
+        Arrays.asList(reportFieldsParameter)
+        : (List<String>) session.getAttribute(EXCEL_REPORT_FIELDS + searchIdParameter);
     logger.trace("reportFields = " + reportFields);
 
     @SuppressWarnings("unchecked")
-    List<Map<String, ?>> records = (List<Map<String, ?>>) session.getAttribute(FOUND_RECORDS_SESSION_ATTRIBUTE + listUID);
+    List<?> records = (List<?>) session.getAttribute("SearchService;searchId=" + searchIdParameter + ";key=rset;");
     logger.trace("resultRecords = " + records);
 
     response.setCharacterEncoding("UTF-8");
@@ -129,26 +166,6 @@ public class ExcelServlet extends HttpServlet {
     }
 
     logger.trace("END Generate Excel Report");
-  }
-
-  /**
-   * Фабричный метод, формирующий объект Excel-отчёта.<br/>
-   * По умолчанию создаёт объект класса ExcelReport. Если в прикладном модуле для этих цедей
-   * используется собственный класс, то данный метод необходимо переопределить.
-   *
-   * @param reportFields  список идентификаторов полей для формирования выгрузки
-   * @param reportHeaders список заголовков таблицы в Excel-файле
-   * @param records       спиок записей для выгрузки
-   * @return объект Excel-отчёта
-   */
-  protected ExcelReport createExcelReport(List<String> reportFields, List<String> reportHeaders, List<Map<String, ?>> records) {
-    return new ExcelReport(recordDefinition, reportFields, reportHeaders, records);
-  }
-
-  @Override
-  protected void doGet(HttpServletRequest request, HttpServletResponse response)
-      throws ServletException, IOException {
-    doPost(request, response);
   }
 
   /**

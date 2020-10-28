@@ -1,8 +1,10 @@
 package org.jepria.compat.server.download.excel;
 
+import org.jepria.server.data.DtoUtil;
 import org.jepria.server.data.RecordDefinition;
 
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.text.*;
 import java.util.*;
@@ -19,11 +21,6 @@ import static org.jepria.compat.shared.util.JepRiaUtil.isEmpty;
  *
  */
 public class ExcelReport {
-
-  /**
-   * Определение записи.
-   */
-  protected final RecordDefinition recordDefinition;
   
   /**
    * Список идентификаторов полей, используемых для формирования документа.
@@ -33,13 +30,13 @@ public class ExcelReport {
   /**
    * Список имён полей (заголовки таблицы в выгружаемом файле).
    */
-  protected final List <String> reportHeaders;
+  protected final List<String> reportHeaders;
   
   /**
    * Список записей, на основе которых строится документ.
    */
-  protected final List<Map<String, ?>> resultRecords;
-  
+  protected final List<?> resultRecords;
+
   /**
    * Resource bundle (необходим для обработки полей типа Boolean).
    */
@@ -58,13 +55,11 @@ public class ExcelReport {
   
   /**
    * Создаёт Excel-отчёт.
-   * @param recordDefinition определение формата записи
    * @param reportFields список идентификаторов полей, участвующих в формировании документа
    * @param reportHeaders наименования полей
    * @param resultRecords список записей для формирования документа
    */
-  public ExcelReport(RecordDefinition recordDefinition, List<String> reportFields, List<String> reportHeaders, List<Map<String, ?>> resultRecords) {
-    this.recordDefinition = recordDefinition;
+  public ExcelReport(List<String> reportFields, List<String> reportHeaders, List<?> resultRecords) {
     this.reportFields = reportFields;
     this.reportHeaders = reportHeaders;
     this.resultRecords = resultRecords;
@@ -113,7 +108,7 @@ public class ExcelReport {
     }
     
     if(resultRecords != null) {
-      for(Map<String, ?> record: resultRecords) {
+      for(Object record: resultRecords) {
         pw.println(createDataRow(record));
       }
       pw.println(TABLE_FOOTER);
@@ -190,12 +185,13 @@ public class ExcelReport {
    * @param record запись, на основе которой формируется строка
    * @return XML-представление строки
    */
-  protected String createDataRow(Map<String, ?> record) {
+  protected String createDataRow(Object record) {
     StringBuilder rowBuilder = new StringBuilder();
-    
+    Map<String, ?> recordMap = DtoUtil.dtoToMap(record);
+    Map<String, Class<?>> recordTypeMap = dtoToTypeMap(record);
     if(reportFields != null) {
       for(String field: reportFields) {
-        String cell = createCell(record, field);            
+        String cell = createCell(recordMap, recordTypeMap, field);
         rowBuilder.append(cell);
       }  
     }
@@ -213,8 +209,8 @@ public class ExcelReport {
    * @throws IllegalStateException в случае, если поле отсутствует в 
    * {@link RecordDefinition определении записи}
    */
-  protected String createCell(Map<String, ?> record, String field) {
-    Class<?> type = recordDefinition.getFieldType(field);
+  protected String createCell(Map<String, ?> record, Map<String, Class<?>> recordTypeMap, String field) {
+    Class<?> type = recordTypeMap.get(field);
         if (type == null) {
             throw new IllegalStateException(
               MessageFormat.format(resourceBundle.getString("errors.excel.fieldTypeNotDefined"), field));
@@ -360,5 +356,27 @@ public class ExcelReport {
     String stringValue = value.toString();
     return STRING_CELL_PREFIX + CDATA_PREFIX + stringValue
         + CDATA_POSTFIX + CELL_POSTFIX;
-  }  
+  }
+
+  //TODO убрать когда recordDefinition поддержит полный fieldTypeMap
+  private static Map<String, Class<?>> dtoToTypeMap(Object dto) {
+    if (dto == null) {
+      return null;
+    }
+    Map<String, Class<?>> fieldsMap = new HashMap<>();
+    Field[] allFields = dto.getClass().getDeclaredFields();
+    for (Field field : allFields) {
+      if (!field.isAccessible()) {
+        field.setAccessible(true);
+      }
+      try {
+        Object value = field.get(dto);
+        fieldsMap.put(field.getName(), value.getClass());
+      } catch (IllegalAccessException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+    return fieldsMap;
+  }
+
 }
