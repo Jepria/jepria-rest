@@ -81,31 +81,37 @@ public class HttpBasicDynamicFeature implements DynamicFeature {
         } else {
           operatorId = pkg_Operator.logon(db, credentials[0], null, credentials[1]);
         }
-        requestContext.setSecurityContext(new SecurityContext(request, credentials[0], operatorId) {
-
-          @Override
-          public boolean isUserInRole(String s) {
-            Db db = new Db(DEFAULT_DATA_SOURCE_JNDI_NAME);
-            try {
-              return super.isRole(db, s);
-            } catch (SQLException ex) {
-              throw new RuntimeSQLException(ex);
-            } finally {
-              db.closeAll();
-            }
-          }
-
-          @Override
-          public String getAuthenticationScheme() {
-            return BASIC_AUTH;
-          }
-        });
+        requestContext.setSecurityContext(new JerseySecurityContext(request, credentials[0], operatorId));
       } catch (SQLException e) {
         requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
             .header(HttpHeaders.WWW_AUTHENTICATE, "Basic").build());
         return;
       } finally {
         db.closeAll();
+      }
+    }
+
+    final class JerseySecurityContext extends SecurityContext {
+
+      public JerseySecurityContext(HttpServletRequest request, String username, Integer operatorId) {
+        super(request, username, operatorId);
+      }
+      
+      @Override
+      public boolean isUserInRole(String s) {
+        Db db = new Db(DEFAULT_DATA_SOURCE_JNDI_NAME);
+        try {
+          return super.isRole(db, s);
+        } catch (SQLException ex) {
+          throw new RuntimeSQLException(ex);
+        } finally {
+          db.closeAll();
+        }
+      }
+
+      @Override
+      public String getAuthenticationScheme() {
+        return BASIC_AUTH;
       }
     }
   }
