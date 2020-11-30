@@ -7,14 +7,16 @@ import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Реализует запись в CLOB.
  */
 public class TextFileDownloadImpl extends AbstractFileDownload implements TextFileDownload {
   /**
    * Метод начинает чтение данных из LOB. 
-   * 
-   * @param rowId идентификатор строки таблицы
+   *
    * @return рекомендуемая величина буфера
    * @throws ApplicationException
    */
@@ -22,15 +24,45 @@ public class TextFileDownloadImpl extends AbstractFileDownload implements TextFi
   public int beginRead(
       String tableName
       , String fileFieldName
-      , String keyFieldName
-      , Object rowId
+      , Map primaryKeyMap
       )
       throws ApplicationException {
 
-    int result = -1;
+    int result;
     try {
 
-      super.largeObject = new TextLargeObject(tableName, fileFieldName, keyFieldName, rowId);
+      super.largeObject = new TextLargeObject(tableName, fileFieldName, primaryKeyMap);
+      result = ((TextLargeObject)super.largeObject).beginRead();
+    } catch (ApplicationException ex) {
+      cancel();
+      throw ex;
+    } catch (IllegalStateException ex) {
+      ex.printStackTrace();
+      throw new SystemException("begin write error", ex);
+    } finally {
+      storedContext = CallContext.detach();
+    }
+
+    return result;
+  }
+  /**
+   * Метод начинает чтение данных из LOB.
+   *
+   * @return рекомендуемая величина буфера
+   * @throws ApplicationException
+   */
+  @Override
+  public int beginRead(
+      String tableName
+      , String fileFieldName
+      , String whereClause
+  )
+      throws ApplicationException {
+
+    int result;
+    try {
+
+      super.largeObject = new TextLargeObject(tableName, fileFieldName, whereClause);
       result = ((TextLargeObject)super.largeObject).beginRead();
     } catch (ApplicationException ex) {
       cancel();

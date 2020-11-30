@@ -26,7 +26,6 @@
     <aopalliance.repackaged.version>2.6.1</aopalliance.repackaged.version>
     <jakarta.inject.version>2.6.1</jakarta.inject.version>
     <validation.api.version>2.0.2</validation.api.version>
-    <gwt.version>2.8.0</gwt.version>
     <ssoutils.version>1.2.0</ssoutils.version>
     <commons.fileupload.version>1.2.2</commons.fileupload.version>
     <log4j.version>1.2.17</log4j.version>
@@ -36,7 +35,6 @@
   </properties>
 
   <dependencies>
-
     <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-server -->
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
@@ -91,16 +89,6 @@
       <version>${validation.api.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-user</artifactId>
-      <version>${gwt.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev</artifactId>
-      <version>${gwt.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.jepria</groupId>
       <artifactId>sso-utils</artifactId>
       <version>${ssoutils.version}</version>
@@ -121,13 +109,13 @@
       <groupId>com.oracle</groupId>
       <artifactId>ojdbc6dms</artifactId>
       <version>${ojdbc6dms.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.jepria</groupId>
       <artifactId>oauth-sdk</artifactId>
       <version>${oauth.sdk.version}</version>
     </dependency>
-
   </dependencies>
 
   <build>

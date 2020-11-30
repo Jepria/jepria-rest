@@ -3,26 +3,40 @@ package org.jepria.compat.server.download;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Интерфейс загрузки файла.
  */
 public interface FileDownload {
   /**
    * Начало длинной транзакции чтения файла из LOB.
-   * 
+   *
    * @param tableName     имя таблицы, из которой выполняется чтение
-   * @param fileFieldName   имя поля, из которого выполняется чтение
-   * @param keyFieldName   имя поля, идентифицирующего строку таблицы
-   * @param rowId         идентификатор строки таблицы
+   * @param primaryKeyMap   имя поля, из которого выполняется чтение
    * @return рекомендуемый размер буфера
-   * @throws ApplicationException 
+   * @throws ApplicationException
    */
   int beginRead(
       String tableName
       , String fileFieldName
-      , String keyFieldName
-      , Object rowId
-      )
+      , Map primaryKeyMap
+  )
+      throws ApplicationException;
+  /**
+   * Начало длинной транзакции чтения файла из LOB.
+   *
+   * @param tableName     имя таблицы, из которой выполняется чтение
+   * @param whereClause   SQL условие
+   * @return рекомендуемый размер буфера
+   * @throws ApplicationException
+   */
+  int beginRead(
+      String tableName
+      , String fileFieldName
+      , String whereClause
+  )
       throws ApplicationException;
   
   /**

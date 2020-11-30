@@ -28,7 +28,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.jepria.compat.shared.exceptions.SystemException;
-import org.jepria.compat.shared.record.lob.JepClob;
 import org.jepria.compat.shared.JepRiaConstant;
 import org.jepria.compat.shared.util.JepRiaUtil;
 
@@ -317,30 +316,6 @@ public class JepServerUtil {
     }
     
     return result;
-  }
-  
-  /**
-   * Формирует {@link org.jepria.compat.shared.record.lob.JepClob} из {@link java.sql.Types#CLOB}.
-   * @param clob
-   * @return JepClob
-   */
-  public static JepClob toJepClob(Clob clob){
-    if (clob == null) throw new NullPointerException();
-    
-    StringBuilder str = new StringBuilder();
-    
-    disableClobPrefetch(clob);
-    
-    try (BufferedReader bufferRead = new BufferedReader(clob.getCharacterStream())) {
-      String bufferStr;
-      while ((bufferStr = bufferRead.readLine()) != null) {
-        str.append(bufferStr);
-      }
-    } catch (Exception  e) {
-      e.printStackTrace();
-    }
-    
-    return new JepClob(str.toString());
   }
   
   /**

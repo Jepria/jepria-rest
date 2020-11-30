@@ -17,7 +17,6 @@ import org.apache.log4j.Logger;
 
 import org.jepria.compat.server.db.Db;
 import org.jepria.compat.shared.exceptions.ApplicationException;
-import org.jepria.compat.shared.record.lob.JepClob;
 import org.jepria.compat.shared.util.JepRiaUtil;
 
 /**
@@ -321,7 +320,7 @@ public class DaoSupport {
       CallableStatement callableStatement,
       Class<? super T> resultTypeClass,
       Object[] params) throws SQLException {
-    T result = null;
+    T result;
     
     if(resultTypeClass.isArray()) {
       Object[] outputParamTypes = (Object[]) params[0];
@@ -572,8 +571,8 @@ public class DaoSupport {
             setBigDecimalParameter(callableStatement, (BigDecimal)param, i);
           } else if (clazz.equals(java.util.Date.class)) {
             setDateParameter(callableStatement, (java.util.Date)param, i);
-          } else if (clazz.equals(JepClob.class)) {
-            setClobParameter(callableStatement, (JepClob)param, i);
+          } else if (clazz.equals(Clob.class)) {
+            setClobParameter(callableStatement, (Clob)param, i);
           } else {
             callableStatement.setObject(i, param);
           }
@@ -685,21 +684,21 @@ public class DaoSupport {
       callableStatement.setTimestamp(place, new java.sql.Timestamp(parameter.getTime()));
     }
   }
-  
+
   /**
-   * Вспомогательный метод. Используется для задания параметра типа Clob объекту callableStatement. 
-   * 
+   * Вспомогательный метод. Используется для задания параметра типа Clob объекту callableStatement.
+   *
    * @param callableStatement    экземпляр callableStatement
    * @param parameter            параметр
    * @param place                место вставки параметра
    * @throws SQLException
    */
-  private static void setClobParameter(CallableStatement callableStatement, JepClob parameter, int place) 
+  private static void setClobParameter(CallableStatement callableStatement, Clob parameter, int place)
       throws SQLException {
     if (JepRiaUtil.isEmpty(parameter)) {
       callableStatement.setNull(place, Types.CLOB);
     } else {
-      callableStatement.setClob(place, new StringReader(parameter.getBigText()));
+      callableStatement.setClob(place, parameter.getCharacterStream());
     }
   }
 }

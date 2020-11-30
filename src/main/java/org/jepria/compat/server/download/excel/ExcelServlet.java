@@ -1,36 +1,33 @@
 package org.jepria.compat.server.download.excel;
 
-import static org.jepria.compat.server.JepRiaServerConstant.EXCEL_REPORT_FIELDS_SESSION_ATTRIBUTE;
-import static org.jepria.compat.server.JepRiaServerConstant.EXCEL_REPORT_HEADERS_SESSION_ATTRIBUTE;
-import static org.jepria.compat.server.JepRiaServerConstant.FOUND_RECORDS_SESSION_ATTRIBUTE;
-import static org.jepria.compat.server.JepRiaServerConstant.SELECTED_RECORDS_SESSION_ATTRIBUTE;
-import static org.jepria.compat.shared.JepRiaConstant.EXCEL_DEFAULT_FILE_NAME;
-import static org.jepria.compat.shared.JepRiaConstant.EXCEL_FILE_NAME_PARAMETER;
-import static org.jepria.compat.shared.JepRiaConstant.LIST_UID_REQUEST_PARAMETER;
-import static org.jepria.compat.shared.util.JepRiaUtil.isEmpty;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.List;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.log4j.Logger;
+import org.jepria.server.data.RecordDefinition;
+import org.jepria.server.service.rest.SearchServiceImpl;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.log4j.Logger;
-
-import org.jepria.compat.shared.record.JepRecord;
-import org.jepria.compat.shared.record.JepRecordDefinition;
+import static org.jepria.compat.server.JepRiaServerConstant.*;
+import static org.jepria.compat.shared.util.JepRiaUtil.isEmpty;
 
 /**
  * Сервлет для отображения набора данных в Excel.<br/>
  * Для использования в прикладном модуле необходимо:
  * <ul>
  *   <li>унаследовать в прикладном модуле сервлет от данного класса вызвав в <code>public</code> конструкторе без параметров конструктор данного
- *   класса {@link #ExcelServlet(JepRecordDefinition recordDefinition)} с указанием 
- *   {@link org.jepria.compat.shared.record.JepRecordDefinition определения записи}. Пример:
+ *   класса {@link #ExcelServlet(RecordDefinition recordDefinition)} с указанием
+ *   {@link RecordDefinition определения записи}. Пример:
  *     <pre>
  *       ...
  *       public PrintActExcelServlet() {
@@ -56,92 +53,40 @@ import org.jepria.compat.shared.record.JepRecordDefinition;
  *     </pre>
  *   </li>
  * </ul>
- * <b>Важно:</b> При добавлении новых полей необходимо внести их в 
- * {@link org.jepria.compat.shared.record.JepRecordDefinition определение записи}.
+ * <b>Важно:</b> При добавлении новых полей необходимо внести их в
+ * {@link RecordDefinition определение записи}.
  */
 @SuppressWarnings("serial")
 public class ExcelServlet extends HttpServlet {
 
   protected static final Logger logger = Logger.getLogger(ExcelServlet.class.getName());
-  
-  /**
-   * Определение записи набора данных.
-   */
-  protected JepRecordDefinition recordDefinition = null;
-  
+
   /**
    * Создает сервлет для отображения набора данных в Excel.<br/>
-   * Конструктор вызывается с указанием {@link org.jepria.compat.shared.record.JepRecordDefinition определения записи} в прикладных модулях
+   * Конструктор вызывается с указанием {@link RecordDefinition определения записи} в прикладных модулях
    * из <code>public</code> конструктора без параметров.
-   *
-   * @param recordDefinition определение записи набора данных
    */
-  public ExcelServlet(JepRecordDefinition recordDefinition) {
-    this.recordDefinition = recordDefinition;    
-  }
+  public ExcelServlet() {}
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response)
-  throws ServletException, IOException {
-    logger.trace("BEGIN Generate Excel Report");
-    
-    String listUIDParameter = request.getParameter(LIST_UID_REQUEST_PARAMETER);
-    if (isEmpty(listUIDParameter)){
-      response.setContentType("text/html;charset=UTF-8");
-      response.getOutputStream().print("<b>Request parameter '" + LIST_UID_REQUEST_PARAMETER +"' is mandatory!</b>");
+      throws ServletException, IOException {
+    Gson gson = new Gson();
+    Type type = new TypeToken<Map<String, String>>(){}.getType();
+    Map<String, ?> requestBody = gson.fromJson(request.getReader(), type);
+    String searchIdParameter = String.valueOf(requestBody.get(SEARCH_ID_PARAMETER));
+    if (isEmpty(searchIdParameter)) {
+      response.setStatus(400);
+      response.getOutputStream().print("Request parameter '" + SEARCH_ID_PARAMETER + "' is mandatory");
       return;
     }
-    
-    Integer listUID = Integer.valueOf(listUIDParameter);
+
     HttpSession session = request.getSession();
-    
-    String fileName = request.getParameter(EXCEL_FILE_NAME_PARAMETER);
-    if (fileName == null) {
-      fileName = EXCEL_DEFAULT_FILE_NAME;
-    }
-    logger.trace("fileName=" + fileName);
-    
-    @SuppressWarnings("unchecked")
-    List<String> reportHeaders = (List<String>)session.getAttribute(EXCEL_REPORT_HEADERS_SESSION_ATTRIBUTE + listUID);
-    logger.trace("reportHeaders = " + reportHeaders);
-    
-    @SuppressWarnings("unchecked")
-    List<String> reportFields = (List<String>)session.getAttribute(EXCEL_REPORT_FIELDS_SESSION_ATTRIBUTE + listUID);
-    logger.trace("reportFields = " + reportFields);
 
-    @SuppressWarnings("unchecked")
-    List<JepRecord> selectedRecords = (List<JepRecord>) session.getAttribute(SELECTED_RECORDS_SESSION_ATTRIBUTE + listUID);
-    logger.trace("seletedRecords = " + selectedRecords);
+    session.setAttribute(EXCEL_REPORT_HEADERS + searchIdParameter, requestBody.get(EXCEL_REPORT_HEADERS));
+    session.setAttribute(EXCEL_REPORT_FIELDS + searchIdParameter, requestBody.get(EXCEL_REPORT_FIELDS));
 
-    @SuppressWarnings("unchecked")
-    List<JepRecord> resultRecords = (List<JepRecord>)session.getAttribute(FOUND_RECORDS_SESSION_ATTRIBUTE + listUID);
-    logger.trace("resultRecords = " + resultRecords);    
-    
-    response.setCharacterEncoding("UTF-8");
-    response.setHeader("Cache-Control", "cache"); //HTTP 1.1
-    response.setHeader("Pragma", "no-cache"); //HTTP 1.0
-    response.setDateHeader("Expires", 0); //prevents caching at the proxy server
-    response.setDateHeader("Last-Modified", System.currentTimeMillis());
-    response.setContentType("application/vnd.ms-excel; charset=UTF-8");
-    response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
-    
-    PrintWriter pw = response.getWriter();    
-    
-    try {
-      ExcelReport report = createExcelReport(
-        reportFields, 
-        reportHeaders, 
-        selectedRecords != null ? selectedRecords : resultRecords);
-      report.print(pw);
-      
-      pw.flush();
-      response.flushBuffer();
-    }
-    catch (Throwable th) {
-      onError(response, th);
-    }
-    
-    logger.trace("END Generate Excel Report");
+    response.setStatus(201);
   }
 
   /**
@@ -149,26 +94,86 @@ public class ExcelServlet extends HttpServlet {
    * По умолчанию создаёт объект класса ExcelReport. Если в прикладном модуле для этих цедей
    * используется собственный класс, то данный метод необходимо переопределить.
    *
-   * @param reportFields список идентификаторов полей для формирования выгрузки
+   * @param reportFields  список идентификаторов полей для формирования выгрузки
    * @param reportHeaders список заголовков таблицы в Excel-файле
-   * @param records спиок записей для выгрузки
+   * @param records       спиок записей для выгрузки
    * @return объект Excel-отчёта
    */
-  protected ExcelReport createExcelReport(List<String> reportFields, List<String> reportHeaders, List<JepRecord> records) {
-    return new ExcelReport(recordDefinition, reportFields, reportHeaders, records);
+  protected ExcelReport createExcelReport(List<String> reportFields, List<String> reportHeaders, List<?> records) {
+    return new ExcelReport(reportFields, reportHeaders, records);
   }
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
-    doPost(request, response);
+    logger.trace("BEGIN Generate Excel Report");
+
+    String searchIdParameter = request.getParameter(SEARCH_ID_PARAMETER);
+    if (isEmpty(searchIdParameter)) {
+      response.setContentType("text/html;charset=UTF-8");
+      response.getOutputStream().print("<b>Request parameter '" + SEARCH_ID_PARAMETER + "' is mandatory!</b>");
+      return;
+    }
+
+    String[] reportHeadersParameter = request.getParameterValues(EXCEL_REPORT_HEADERS);
+    String[] reportFieldsParameter = request.getParameterValues(EXCEL_REPORT_FIELDS);
+
+    HttpSession session = request.getSession();
+
+    String fileName = request.getParameter(EXCEL_FILE_NAME_PARAMETER);
+    if (fileName == null) {
+      fileName = EXCEL_DEFAULT_FILE_NAME;
+    }
+    logger.trace("fileName=" + fileName);
+
+    @SuppressWarnings("unchecked")
+    List<String> reportHeaders = reportHeadersParameter != null ?
+        Arrays.asList(reportHeadersParameter)
+        : (List<String>) session.getAttribute(EXCEL_REPORT_HEADERS + searchIdParameter);
+    logger.trace("reportHeaders = " + reportHeaders);
+
+    @SuppressWarnings("unchecked")
+    List<String> reportFields = reportFieldsParameter != null ?
+        Arrays.asList(reportFieldsParameter)
+        : (List<String>) session.getAttribute(EXCEL_REPORT_FIELDS + searchIdParameter);
+    logger.trace("reportFields = " + reportFields);
+
+    @SuppressWarnings("unchecked")
+    List<?> records = (List<?>) session.getAttribute("SearchService;searchId=" + searchIdParameter + ";key=rset;");
+    logger.trace("resultRecords = " + records);
+
+    response.setCharacterEncoding("UTF-8");
+    response.setHeader("Cache-Control", "cache"); //HTTP 1.1
+    response.setHeader("Pragma", "no-cache"); //HTTP 1.0
+    response.setDateHeader("Expires", 0); //prevents caching at the proxy server
+    response.setDateHeader("Last-Modified", System.currentTimeMillis());
+    response.setContentType("application/vnd.ms-excel; charset=UTF-8");
+    response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+    PrintWriter pw = response.getWriter();
+
+    try {
+      ExcelReport report = createExcelReport(
+          reportFields,
+          reportHeaders,
+          records);
+      report.print(pw);
+
+      pw.flush();
+      response.flushBuffer();
+    } catch (Throwable th) {
+      onError(response, th);
+    }
+
+    logger.trace("END Generate Excel Report");
   }
-  
+
   /**
    * Отправка сообщения об ошибке в случае её возникновения.<br/>
    * При необходимости данный метод может быть переопределён в классе-наследнике.
+   *
    * @param response результат работы сервлета (ответ)
-   * @param th возникшее исключение
+   * @param th       возникшее исключение
    * @throws IOException
    */
   protected void onError(HttpServletResponse response, Throwable th) throws IOException {

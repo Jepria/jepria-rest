@@ -6,15 +6,16 @@ import org.jepria.compat.server.download.AbstractFileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
+import java.util.Map;
+
 /**
  * Класс, реализующий выгрузку (download) бинарного файла.
  */
 public class BinaryFileDownloadImpl extends AbstractFileDownload implements BinaryFileDownload {
-  
+
   /**
-   * Метод начинает чтение данных из LOB. 
-   * 
-   * @param rowId идентификатор строки таблицы
+   * Метод начинает чтение данных из LOB.
+   *
    * @return рекомендуемая величина буфера
    * @throws ApplicationException
    */
@@ -22,15 +23,14 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
   public int beginRead(
       String tableName
       , String fileFieldName
-      , String keyFieldName
-      , Object rowId
+      , Map primaryKeyMap
       )
       throws ApplicationException {
 
     int result = -1;
     try {
 
-      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, keyFieldName, rowId);
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, primaryKeyMap);
       result = ((BinaryLargeObject)super.largeObject).beginRead();
     } catch (ApplicationException ex) {
       cancel();
@@ -41,10 +41,39 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
 
     return result;
   }
-  
+
+  /**
+   * Метод начинает чтение данных из LOB.
+   *
+   * @return рекомендуемая величина буфера
+   * @throws ApplicationException
+   */
+  @Override
+  public int beginRead(
+      String tableName
+      , String fileFieldName
+      , String whereClause
+  )
+      throws ApplicationException {
+
+    int result = -1;
+    try {
+
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, whereClause);
+      result = ((BinaryLargeObject)super.largeObject).beginRead();
+    } catch (ApplicationException ex) {
+      cancel();
+      throw ex;
+    } finally {
+      storedContext = CallContext.detach();
+    }
+
+    return result;
+  }
+
   /**
    * Чтение очередного блока данных из BINARY_FILE.
-   * 
+   *
    * @param dataBlock блок данных
    * @throws SpaceException
    */
@@ -66,7 +95,7 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
       }
       storedContext = CallContext.detach();
     }
-    
+
     return result;
   }
 }

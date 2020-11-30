@@ -1,10 +1,9 @@
 package org.jepria.compat.shared.exceptions;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import javax.naming.NamingException;
-
-import com.google.gwt.user.client.rpc.IsSerializable;
 
 /**
  * Общий предок исключений, "порождаемых" платформой (J2EE-контейнером, базой данных и т.п.).<br/>
@@ -16,7 +15,7 @@ import com.google.gwt.user.client.rpc.IsSerializable;
  * проверить наличие искомого среди уже имеющихся потомков данного класса. В случае отсутствия, следует  
  * создать наследника от данного класса или использовать производные классы общего предка {@link RuntimeException}.
  */
-public class SystemException extends RuntimeException implements IsSerializable {
+public class SystemException extends RuntimeException implements Serializable {
   
   private static final long serialVersionUID = 1L;
   

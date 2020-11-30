@@ -6,6 +6,9 @@ import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.server.upload.AbstractFileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Реализует загрузку (upload) бинарного файла.
  */
@@ -14,7 +17,7 @@ public class BinaryFileUploadImpl extends AbstractFileUpload implements BinaryFi
   /**
    * Создаёт загрузчик файлов на сервер.
    */
-  public BinaryFileUploadImpl(){
+  public BinaryFileUploadImpl() {
     super();
   }
 
@@ -23,16 +26,15 @@ public class BinaryFileUploadImpl extends AbstractFileUpload implements BinaryFi
    */
   @Override
   public int beginWrite(
-    String tableName
-    , String fileFieldName
-    , String keyFieldName
-    , Object rowId)
-    throws ApplicationException {
+      String tableName
+      , String fileFieldName
+      , Map primaryKeyMap)
+      throws ApplicationException {
 
     int result = -1;
     try {
-      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, keyFieldName, rowId);
-      result = ((BinaryLargeObject)super.largeObject).beginWrite();
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, primaryKeyMap);
+      result = ((BinaryLargeObject) super.largeObject).beginWrite();
     } catch (ApplicationException ex) {
       cancel();
       throw ex;
@@ -42,7 +44,24 @@ public class BinaryFileUploadImpl extends AbstractFileUpload implements BinaryFi
 
     return result;
   }
-  
+
+  @Override
+  public int beginWrite(String tableName, String fileFieldName, String whereClause) throws ApplicationException {
+
+    int result = -1;
+    try {
+      super.largeObject = new BinaryLargeObject(tableName, fileFieldName, whereClause);
+      result = ((BinaryLargeObject) super.largeObject).beginWrite();
+    } catch (ApplicationException ex) {
+      cancel();
+      throw ex;
+    } finally {
+      storedContext = CallContext.detach();
+    }
+
+    return result;
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -51,7 +70,7 @@ public class BinaryFileUploadImpl extends AbstractFileUpload implements BinaryFi
     CallContext.attach(storedContext);
     boolean cancelled = false;
     try {
-      ((BinaryLargeObject)super.largeObject).continueWrite(dataBlock);
+      ((BinaryLargeObject) super.largeObject).continueWrite(dataBlock);
     } catch (Throwable ex) {
       cancelled = true;
       if (ex instanceof SpaceException) {

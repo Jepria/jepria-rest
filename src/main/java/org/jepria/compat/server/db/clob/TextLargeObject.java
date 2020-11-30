@@ -16,6 +16,9 @@ import java.sql.CallableStatement;
 import java.sql.Clob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Класс поддерживает запись в поле CLOB.
@@ -30,15 +33,27 @@ public class TextLargeObject extends LargeObject {
    * 
    * @param tableName имя таблицы, в которую выполняется запись
    * @param fileFieldName имя поля, в которую выполняется запись
-   * @param keyFieldName имя поля, идентифицирующего строку таблицы
-   * @param rowId идентификатор строки таблицы
+   * @param primaryKeyMap имя поля, идентифицирующего строку таблицы
    */
-  public TextLargeObject(String tableName, String fileFieldName, String keyFieldName, Object rowId) {
-    super(tableName, fileFieldName, keyFieldName, rowId);
-    
-    rowId = String.class.isInstance(rowId) ? "'" + rowId + "'" : rowId;
+  public TextLargeObject(String tableName, String fileFieldName, Map primaryKeyMap) {
+    super(tableName, fileFieldName, primaryKeyMap);
 
-    super.sqlClearLob = "update " + tableName + " set " + fileFieldName + "=empty_clob() where " + keyFieldName + "=" + rowId;
+    String queryString = buildSqlString(primaryKeyMap);
+
+    super.sqlClearLob = "update " + tableName + " set " + fileFieldName + "=empty_clob() where " + queryString;
+  }
+
+  /**
+   * Конструктор
+   *
+   * @param tableName имя таблицы, в которую выполняется запись
+   * @param fileFieldName имя поля, в которую выполняется запись
+   * @param whereClause имя поля, идентифицирующего строку таблицы
+   */
+  public TextLargeObject(String tableName, String fileFieldName, String whereClause) {
+    super(tableName, fileFieldName, whereClause);
+
+    super.sqlClearLob = "update " + tableName + " set " + fileFieldName + "=empty_clob() where " + whereClause;
   }
   
   /**
@@ -64,7 +79,9 @@ public class TextLargeObject extends LargeObject {
         writer = clob.setCharacterStream(0);
         result = WRITE_LENGTH;
       } else {
-        throw new ApplicationException("Record of table '" + tableName + "' with id '" + keyFieldName + "' was not found", null);
+        throw new ApplicationException("Record of table '" + tableName + "' with id '" + primaryKeyMap != null ?
+            primaryKeyMap.entrySet().toArray().toString()
+            : whereClause + "' was not found", null);
       }
       return result;
     } catch (SQLException ex) {
@@ -107,7 +124,9 @@ public class TextLargeObject extends LargeObject {
 
         result = WRITE_LENGTH;
       } else {
-        throw new ApplicationException("Record of table '" + tableName + "' with id '" + keyFieldName + "' was not found", null);
+        throw new ApplicationException("Record of table '" + tableName + "' with id '" + primaryKeyMap != null ?
+            primaryKeyMap.entrySet().toArray().toString()
+            : whereClause + "' was not found", null);
       }
       return result;
     } catch (SQLException ex) {

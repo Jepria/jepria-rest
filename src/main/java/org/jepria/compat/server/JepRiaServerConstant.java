@@ -8,7 +8,7 @@ public class JepRiaServerConstant extends JepRiaConstant {
   
   public static final String LOCALE_KEY = "org.jepria.compat.server.LOCALE";
   
-  public static final String JEP_RIA_RESOURCE_BUNDLE_NAME = "org.jepria.server.shared.text.JepRiaText";
+  public static final String JEP_RIA_RESOURCE_BUNDLE_NAME = "org.jepria.server.text.JepRiaText";
     
   /**
    * JNDI-имя источника данных модуля.
@@ -29,20 +29,17 @@ public class JepRiaServerConstant extends JepRiaConstant {
    */
   public static final String FOUND_RECORDS_SESSION_ATTRIBUTE = "foundRecordsSessionAttribute";
 
-  /**
-   * Префикс имени аттрибута сессии, в котором сохраняется выбранный набор записей. 
-   */
-  public final static String SELECTED_RECORDS_SESSION_ATTRIBUTE = "selectedRecordsSessionAttribute";
+  public static final String SEARCH_ID_PARAMETER = "searchId";
 
   /**
    * Префикс имени аттрибута сессии, в котором сохраняется список содержащий названия колонок Excel-отчета.
    */
-  public static final String EXCEL_REPORT_HEADERS_SESSION_ATTRIBUTE = "excelReportHeaders";
+  public static final String EXCEL_REPORT_HEADERS = "excelReportHeaders";
 
   /**
    * Префикс имени аттрибута сессии, в котором сохраняется список содержащий идентификаторы полей, из которых брать данные для колонок Excel-отчета.
    */
-  public static final String EXCEL_REPORT_FIELDS_SESSION_ATTRIBUTE = "excelReportFields";
+  public static final String EXCEL_REPORT_FIELDS = "excelReportFields";
   
   /**
    * Имя атрибута сессии, в котором хранится флаг автообновления.
