@@ -180,7 +180,7 @@ public class DownloadServlet extends HttpServlet {
     session.setAttribute(DOWNLOAD_FIELD_NAME + downloadId, downloadRequest.get(DOWNLOAD_FIELD_NAME));
     session.setAttribute(DOWNLOAD_CONTENT_DISPOSITION + downloadId, downloadRequest.get(DOWNLOAD_CONTENT_DISPOSITION));
     resp.setStatus(HttpServletResponse.SC_CREATED);
-    resp.setHeader("Location", req.getRequestURL().toString() + "/" + downloadId);
+    resp.setHeader("Location", req.getRequestURL().toString() + "/?" + DOWNLOAD_ID + "=" + downloadId);
   }
 
   @Override
