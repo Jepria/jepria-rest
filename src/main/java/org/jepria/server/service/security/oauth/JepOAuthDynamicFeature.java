@@ -72,7 +72,6 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
             throw new RuntimeSQLException(sqlException1);
           } catch (Throwable ex) {
             if (ex.getMessage().contains("DataSource 'java:/comp/env/" + DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME + "' not found")) {
-              ex.printStackTrace();
               db = new Db(DEFAULT_DATA_SOURCE_JNDI_NAME);
               try {
                 return super.isRole(db, s);
@@ -109,7 +108,6 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
           throw new RuntimeSQLException(ex);
         } catch (Throwable ex) {
           if (ex.getMessage().contains("DataSource 'java:/comp/env/" + DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME + "' not found")) {
-            ex.printStackTrace();
             db = new Db(getBackupDatasourceJndiName());
             try {
               clientSecret = OAuthDbHelper.getClientSecret(db, getClientId());
