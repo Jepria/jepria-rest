@@ -165,7 +165,7 @@
                   <type>${project.packaging}</type>
                   <overWrite>true</overWrite>
                   <outputDirectory>
-                    ${env.BIN_HOME}/deploy/org/jepria/${project.artifactId}/${project.version}
+                    ${env.BIN_HOME}/build/org/jepria/${project.artifactId}/${project.version}
                   </outputDirectory>
                 </artifactItem>
               </artifactItems>
