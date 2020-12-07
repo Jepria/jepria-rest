@@ -32,6 +32,7 @@
     <ojdbc6dms.version>11.2.0.4</ojdbc6dms.version>
     <oauth.sdk.version>1.0.0</oauth.sdk.version>
     <gson.version>2.8.6</gson.version>
+    <servlet-api.version>3.1.0</servlet-api.version>
   </properties>
 
   <dependencies>
@@ -116,6 +117,18 @@
       <artifactId>oauth-sdk</artifactId>
       <version>${oauth.sdk.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>${servlet-api.version}</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -159,44 +172,44 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>      
-	  <plugin>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>3.1.1</version>
         <configuration>
           <additionalJOptions>
-			<additionalJOption>-J-Xmx1g</additionalJOption>
-			<additionalJOption>-Xdoclint:none</additionalJOption>
-            </additionalJOptions>
-            <docencoding>UTF-8</docencoding>
-            <encoding>UTF-8</encoding>
-            <overview>src/resources/overview.html</overview>
-            <doctitle>${project.artifactId} API Reference</doctitle>
-            <windowtitle>>${project.artifactId} JavaDoc</windowtitle>
-            <show>private</show>
-          </configuration>
+            <additionalJOption>-J-Xmx1g</additionalJOption>
+            <additionalJOption>-Xdoclint:none</additionalJOption>
+          </additionalJOptions>
+          <docencoding>UTF-8</docencoding>
+          <encoding>UTF-8</encoding>
+          <overview>src/resources/overview.html</overview>
+          <doctitle>${project.artifactId} API Reference</doctitle>
+          <windowtitle>>${project.artifactId} JavaDoc</windowtitle>
+          <show>private</show>
+        </configuration>
       </plugin>
-	  <plugin>
-		<groupId>com.github.danielflower.mavenplugins</groupId>
-		<artifactId>gitlog-maven-plugin</artifactId>
-		<version>1.13.17</version>
-		<configuration>
-		  <reportTitle>Changelog for jepria-rest</reportTitle>
-		  <verbose>true</verbose>
-		  <outputDirectory>target/site/apidocs</outputDirectory>
-		  <generateSimpleHTMLChangeLog>true</generateSimpleHTMLChangeLog>
-		  <simpleHTMLChangeLogFilename>changelog.html</simpleHTMLChangeLogFilename>
-		  <fullGitMessage>true</fullGitMessage>
-		  <dateFormat>yyyy-MM-dd HH:mm:ss Z</dateFormat>
-		  <includeCommitsDuringTheLastDays>365</includeCommitsDuringTheLastDays>
-		  <generateAsciidocChangeLog>false</generateAsciidocChangeLog>
-		  <generateMarkdownChangeLog>false</generateMarkdownChangeLog>
-		  <generatePlainTextChangeLog>false</generatePlainTextChangeLog>
-		  <generateJSONChangeLog>false</generateJSONChangeLog>
-		  <fullGitMessage>true</fullGitMessage>
-		</configuration>
-	  </plugin>
+      <plugin>
+        <groupId>com.github.danielflower.mavenplugins</groupId>
+        <artifactId>gitlog-maven-plugin</artifactId>
+        <version>1.13.17</version>
+        <configuration>
+          <reportTitle>Changelog for jepria-rest</reportTitle>
+          <verbose>true</verbose>
+          <outputDirectory>target/site/apidocs</outputDirectory>
+          <generateSimpleHTMLChangeLog>true</generateSimpleHTMLChangeLog>
+          <simpleHTMLChangeLogFilename>changelog.html</simpleHTMLChangeLogFilename>
+          <fullGitMessage>true</fullGitMessage>
+          <dateFormat>yyyy-MM-dd HH:mm:ss Z</dateFormat>
+          <includeCommitsDuringTheLastDays>365</includeCommitsDuringTheLastDays>
+          <generateAsciidocChangeLog>false</generateAsciidocChangeLog>
+          <generateMarkdownChangeLog>false</generateMarkdownChangeLog>
+          <generatePlainTextChangeLog>false</generatePlainTextChangeLog>
+          <generateJSONChangeLog>false</generateJSONChangeLog>
+          <fullGitMessage>true</fullGitMessage>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>
