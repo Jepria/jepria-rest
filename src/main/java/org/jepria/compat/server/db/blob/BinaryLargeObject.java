@@ -51,9 +51,6 @@ public class BinaryLargeObject extends LargeObject {
    */
   public BinaryLargeObject(String tableName, String fileFieldName, String whereClause) {
     super(tableName, fileFieldName, whereClause);
-
-    String queryString = buildSqlString(primaryKeyMap);
-
     super.sqlClearLob = "update " + tableName + " set " + fileFieldName + "=empty_blob() where " + whereClause;
   }
 

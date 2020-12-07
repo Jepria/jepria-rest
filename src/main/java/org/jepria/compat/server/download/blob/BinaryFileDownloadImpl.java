@@ -32,9 +32,9 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
 
       super.largeObject = new BinaryLargeObject(tableName, fileFieldName, primaryKeyMap);
       result = ((BinaryLargeObject)super.largeObject).beginRead();
-    } catch (ApplicationException ex) {
+    } catch (Throwable th) {
       cancel();
-      throw ex;
+      throw th;
     } finally {
       storedContext = CallContext.detach();
     }
@@ -58,12 +58,11 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
 
     int result = -1;
     try {
-
       super.largeObject = new BinaryLargeObject(tableName, fileFieldName, whereClause);
       result = ((BinaryLargeObject)super.largeObject).beginRead();
-    } catch (ApplicationException ex) {
+    } catch (Throwable th) {
       cancel();
-      throw ex;
+      throw th;
     } finally {
       storedContext = CallContext.detach();
     }
