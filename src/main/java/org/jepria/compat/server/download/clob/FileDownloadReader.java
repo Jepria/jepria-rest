@@ -1,17 +1,16 @@
 package org.jepria.compat.server.download.clob;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.download.FileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
+import org.jepria.server.data.sql.ConnectionContext;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -99,9 +98,9 @@ public class FileDownloadReader extends Reader {
     try {
       // Здесь выполняется преобразование из байтов в символы
       bufferedWriter = new BufferedWriter(writer);
-
+  
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -135,12 +134,12 @@ public class FileDownloadReader extends Reader {
       if(fileDownload != null) {
         try {
           fileDownload.endRead();
-
+  
           if (transactionable) {
             if (fileDownload.isCancelled()) {
-              CallContext.rollback();
+              ConnectionContext.getInstance().rollback();
             } else {
-              CallContext.commit();
+              ConnectionContext.getInstance().commit();
             }
           }
 
@@ -150,7 +149,7 @@ public class FileDownloadReader extends Reader {
           throw new SystemException("end write error", ex);
         } finally {
           if (transactionable) {
-            CallContext.end();
+            ConnectionContext.getInstance().end();
           }
         }
       }
@@ -194,7 +193,7 @@ public class FileDownloadReader extends Reader {
       bufferedWriter = new BufferedWriter(writer);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -228,12 +227,12 @@ public class FileDownloadReader extends Reader {
       if(fileDownload != null) {
         try {
           fileDownload.endRead();
-
+  
           if (transactionable) {
             if (fileDownload.isCancelled()) {
-              CallContext.rollback();
+              ConnectionContext.getInstance().rollback();
             } else {
-              CallContext.commit();
+              ConnectionContext.getInstance().commit();
             }
           }
 
@@ -243,7 +242,7 @@ public class FileDownloadReader extends Reader {
           throw new SystemException("end write error", ex);
         } finally {
           if (transactionable) {
-            CallContext.end();
+            ConnectionContext.getInstance().end();
           }
         }
       }

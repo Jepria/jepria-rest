@@ -1,10 +1,10 @@
 package org.jepria.compat.server.download.blob;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.download.FileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
+import org.jepria.server.data.sql.ConnectionContext;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -132,7 +132,7 @@ public class FileDownloadStream extends InputStream {
       writeStream = new BufferedOutputStream(fileStream);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -170,9 +170,9 @@ public class FileDownloadStream extends InputStream {
 
         if (transactionable) {
           if (fileDownload.isCancelled()) {
-            CallContext.rollback();
+            ConnectionContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            ConnectionContext.getInstance().commit();
           }
         }
 
@@ -182,7 +182,7 @@ public class FileDownloadStream extends InputStream {
         throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          ConnectionContext.getInstance().end();
         }
       }
     }
@@ -216,7 +216,7 @@ public class FileDownloadStream extends InputStream {
       writeStream = new BufferedOutputStream(fileStream);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -254,9 +254,9 @@ public class FileDownloadStream extends InputStream {
 
         if (transactionable) {
           if (fileDownload.isCancelled()) {
-            CallContext.rollback();
+            ConnectionContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            ConnectionContext.getInstance().commit();
           }
         }
 
@@ -266,7 +266,7 @@ public class FileDownloadStream extends InputStream {
         throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          ConnectionContext.getInstance().end();
         }
       }
     }

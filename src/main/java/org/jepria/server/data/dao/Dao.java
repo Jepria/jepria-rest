@@ -1,4 +1,4 @@
-package org.jepria.server.data;
+package org.jepria.server.data.dao;
 
 import java.util.List;
 import java.util.Map;

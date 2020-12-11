@@ -1,12 +1,10 @@
 package org.jepria.compat.server.upload.clob;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.db.clob.TextLargeObject;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.server.upload.AbstractFileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,8 +36,6 @@ public class TextFileUploadImpl extends AbstractFileUpload implements TextFileUp
     } catch (ApplicationException ex) {
       cancel();
       throw ex;
-    } finally {
-      storedContext = CallContext.detach();
     }
 
     return result;
@@ -61,19 +57,21 @@ public class TextFileUploadImpl extends AbstractFileUpload implements TextFileUp
     } catch (ApplicationException ex) {
       cancel();
       throw ex;
-    } finally {
-      storedContext = CallContext.detach();
     }
 
     return result;
   }
-
+  
+  @Override
+  public int beginWrite(Object rowId) {
+    throw new UnsupportedOperationException();
+  }
+  
   /**
    * {@inheritDoc}
    */
   @Override
   public void continueWrite(char[] dataBlock) throws SpaceException {
-    CallContext.attach(storedContext);
     boolean cancelled = false;
     try {
       ((TextLargeObject) super.largeObject).continueWrite(dataBlock);
@@ -94,7 +92,6 @@ public class TextFileUploadImpl extends AbstractFileUpload implements TextFileUp
           e.printStackTrace();
         }
       }
-      storedContext = CallContext.detach();
     }
   }
 }

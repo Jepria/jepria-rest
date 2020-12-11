@@ -1,6 +1,5 @@
 package org.jepria.compat.server.download.blob;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.db.blob.BinaryLargeObject;
 import org.jepria.compat.server.download.AbstractFileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
@@ -35,8 +34,6 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
     } catch (Throwable th) {
       cancel();
       throw th;
-    } finally {
-      storedContext = CallContext.detach();
     }
 
     return result;
@@ -63,8 +60,6 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
     } catch (Throwable th) {
       cancel();
       throw th;
-    } finally {
-      storedContext = CallContext.detach();
     }
 
     return result;
@@ -78,7 +73,6 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
    */
   @Override
   public int continueRead(byte[] dataBlock) throws SpaceException {
-    CallContext.attach(storedContext);
     boolean cancelled = true;
     int result = 0;
     try {
@@ -92,9 +86,13 @@ public class BinaryFileDownloadImpl extends AbstractFileDownload implements Bina
       if (cancelled) {
         cancel();
       }
-      storedContext = CallContext.detach();
     }
 
     return result;
+  }
+  
+  @Override
+  public int beginRead(Object rowId) {
+    throw new UnsupportedOperationException();
   }
 }

@@ -1,10 +1,10 @@
 package org.jepria.compat.server.upload.clob;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.server.upload.FileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
+import org.jepria.server.data.sql.ConnectionContext;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -110,7 +110,7 @@ public class FileUploadWriter extends Writer {
       bufferedReader = new BufferedReader(reader);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileUpload.beginWrite(
@@ -146,9 +146,9 @@ public class FileUploadWriter extends Writer {
 
         if (transactionable) {
           if (fileUpload.isCancelled()) {
-            CallContext.rollback();
+            ConnectionContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            ConnectionContext.getInstance().commit();
           }
         }
 
@@ -158,7 +158,7 @@ public class FileUploadWriter extends Writer {
         throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          ConnectionContext.getInstance().end();
         }
       }
     }
@@ -194,7 +194,7 @@ public class FileUploadWriter extends Writer {
       bufferedReader = new BufferedReader(reader);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileUpload.beginWrite(
@@ -230,9 +230,9 @@ public class FileUploadWriter extends Writer {
 
         if (transactionable) {
           if (fileUpload.isCancelled()) {
-            CallContext.rollback();
+            ConnectionContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            ConnectionContext.getInstance().commit();
           }
         }
 
@@ -242,7 +242,7 @@ public class FileUploadWriter extends Writer {
         throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          ConnectionContext.getInstance().end();
         }
       }
     }

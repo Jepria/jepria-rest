@@ -1,6 +1,6 @@
 package org.jepria.server.service.rest;
 
-import org.jepria.server.data.Dao;
+import org.jepria.server.data.dao.Dao;
 import org.jepria.server.data.RecordComparator;
 import org.jepria.server.data.RecordDefinition;
 import org.jepria.server.service.security.Credential;

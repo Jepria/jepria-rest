@@ -1,6 +1,5 @@
 package org.jepria.compat.server.download;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.db.LargeObject;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
@@ -11,7 +10,6 @@ import org.jepria.compat.shared.exceptions.SystemException;
  */
 public abstract class AbstractFileDownload implements FileDownload {
 
-  protected CallContext storedContext;
   protected LargeObject largeObject = null;
 
   protected boolean cancelled = false;
@@ -29,11 +27,7 @@ public abstract class AbstractFileDownload implements FileDownload {
    * @throws ApplicationException
    */
   @Override
-  public int beginRead(Object rowId) 
-    throws ApplicationException {
-
-    return 0;
-  }
+  public abstract int beginRead(Object rowId) throws ApplicationException;
   
   /**
    * Метод завершает чтение данных из LOB.
@@ -42,7 +36,6 @@ public abstract class AbstractFileDownload implements FileDownload {
    */
   @Override
   public void endRead() throws SpaceException {
-    CallContext.attach(storedContext);
     try {
       largeObject.endRead();
     } catch (SpaceException ex) {
@@ -60,9 +53,6 @@ public abstract class AbstractFileDownload implements FileDownload {
   @Override
   public void cancel() {
     cancelled = true;
-    if (storedContext != null) {
-      CallContext.attach(storedContext);
-    }
     if (largeObject != null) {
       largeObject.cancel();
     }

@@ -1,18 +1,16 @@
 package org.jepria.compat.server.upload.blob;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.server.upload.FileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
-import org.jepria.compat.shared.exceptions.NotImplementedYetException;
 import org.jepria.compat.shared.exceptions.SystemException;
+import org.jepria.server.data.sql.ConnectionContext;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -147,7 +145,7 @@ public class FileUploadStream extends OutputStream {
       readStream = new BufferedInputStream(fileStream);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileUpload.beginWrite(
@@ -183,9 +181,9 @@ public class FileUploadStream extends OutputStream {
 
         if (transactionable) {
           if (fileUpload.isCancelled()) {
-            CallContext.rollback();
+            ConnectionContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            ConnectionContext.getInstance().commit();
           }
         }
 
@@ -195,7 +193,7 @@ public class FileUploadStream extends OutputStream {
         throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          ConnectionContext.getInstance().end();
         }
       }
     }
@@ -238,7 +236,7 @@ public class FileUploadStream extends OutputStream {
       readStream = new BufferedInputStream(fileStream);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileUpload.beginWrite(
@@ -274,9 +272,9 @@ public class FileUploadStream extends OutputStream {
 
         if (transactionable) {
           if (fileUpload.isCancelled()) {
-            CallContext.rollback();
+            ConnectionContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            ConnectionContext.getInstance().commit();
           }
         }
 
@@ -286,7 +284,7 @@ public class FileUploadStream extends OutputStream {
         throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          ConnectionContext.getInstance().end();
         }
       }
     }
