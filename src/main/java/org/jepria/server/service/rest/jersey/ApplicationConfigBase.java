@@ -214,4 +214,8 @@ public class ApplicationConfigBase extends ResourceConfig {
   protected void registerProtectedDynamicFeature() {
     register(ProtectedDynamicFeature.class);
   }
+  
+  protected void registerPropertyPathResolver() {
+    register(ValidationConfigurationContextResolver.class);
+  }
 }
