@@ -69,6 +69,8 @@ public class ApplicationConfigBase extends ResourceConfig {
     registerOAuthDynamicFeature();
 
     registerProtectedDynamicFeature();
+  
+    registerPropertyPathResolver();
   }
   
   /**
