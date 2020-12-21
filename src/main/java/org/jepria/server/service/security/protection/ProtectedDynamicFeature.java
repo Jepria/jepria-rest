@@ -52,7 +52,7 @@ public class ProtectedDynamicFeature implements DynamicFeature {
     } else if (resourceAnnotation != null) {
       context.register(new ProtectedRequestFilter(resourceAnnotation.httpBasicPasswordType()));
       return;
-    } else if (MetaInfoResource.class.equals(resourceInfo.getResourceClass())) {
+    } else if (MetaInfoResource.class.equals(resourceInfo.getResourceClass()) && resourceInfo.getResourceMethod().getName() != "oauthCallback") {
       context.register(new ProtectedRequestFilter(passwordType));
     }
   }
