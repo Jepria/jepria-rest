@@ -1,7 +1,7 @@
 package org.jepria.server.service.security;
 
 import oracle.jdbc.OracleTypes;
-import org.jepria.compat.server.db.Db;
+import org.jepria.server.data.sql.ConnectionContext;
 
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
@@ -20,7 +20,7 @@ public abstract class SecurityContext implements javax.ws.rs.core.SecurityContex
     this.operatorId = operatorId;
   }
 
-  public boolean isRole(Db db, String roleShortName) throws SQLException {
+  public boolean isRole(String datasourceJndiName, String roleShortName) throws SQLException {
     String sqlQuery =
         "begin ? := pkg_operator.isrole(" +
             "operatorid => ?, " +
@@ -28,13 +28,20 @@ public abstract class SecurityContext implements javax.ws.rs.core.SecurityContex
             "); " +
             "end;";
     int result;
-    try (CallableStatement callableStatement = db.prepare(sqlQuery)){
+    ConnectionContext.getInstance().begin(datasourceJndiName, "");
+    try (CallableStatement callableStatement = ConnectionContext.getInstance().prepareCall(sqlQuery)) {
       callableStatement.registerOutParameter(1, OracleTypes.INTEGER);
       callableStatement.setInt(2, operatorId);
       callableStatement.setString(3, roleShortName);
       callableStatement.execute();
       result = new Integer(callableStatement.getInt(1));
       if (callableStatement.wasNull()) result = 0;
+      ConnectionContext.getInstance().commit();
+    } catch (SQLException exception) {
+      ConnectionContext.getInstance().rollback();
+      throw exception;
+    } finally {
+      ConnectionContext.getInstance().end();
     }
     return result == 1;
   }

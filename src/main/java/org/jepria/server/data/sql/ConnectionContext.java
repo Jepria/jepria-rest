@@ -38,6 +38,7 @@ public class ConnectionContext {
     }
   }
   
+  
   protected static Logger logger = Logger.getLogger(ConnectionContext.class.getName());
   
   private ConnectionContext() {}
@@ -118,6 +119,9 @@ public class ConnectionContext {
   public void end() {
     ConnectionContext result = threadLocal.get();
     threadLocal.set(null);
+    if (result == null) {
+      return;
+    }
     statements.forEach(cs -> {
       try {
         if (!cs.isClosed()) {
@@ -150,15 +154,23 @@ public class ConnectionContext {
    * Выполняет фиксацию (commit) текущей транзакции.
    * @throws SQLException в случае, если соединение выбросило исключение
    */
-  public void commit() throws SQLException {
-    getConnection().commit();
+  public void commit() {
+    try {
+      getConnection().commit();
+    } catch (SQLException exception) {
+      exception.printStackTrace();
+    }
   }
   
   /**
    * Выполняет откат (rollback) текущей транзакции.
    * @throws SQLException в случае, если соединение выбросило исключение
    */
-  public void rollback() throws SQLException {
-    getConnection().rollback();
+  public void rollback() {
+    try {
+      getConnection().rollback();
+    } catch (SQLException exception) {
+      exception.printStackTrace();
+    }
   }
 }

@@ -69,7 +69,7 @@ public class TextLargeObject extends LargeObject {
       cs.execute();
       
       // Получаем поток для записи поля СLOB
-      cs = database.prepare(super.sqlObtainOutputStream);
+      cs = ConnectionContext.getInstance().prepareCall(super.sqlObtainOutputStream);
       ResultSet rs = cs.executeQuery();
       if(rs.next()) {
         Clob clob = rs.getClob(1);
@@ -82,7 +82,7 @@ public class TextLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      database.rollback();
+      ConnectionContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin write error", ex);
     }
@@ -125,7 +125,7 @@ public class TextLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      database.rollback();
+      ConnectionContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin read error", ex);
     }
@@ -188,7 +188,7 @@ public class TextLargeObject extends LargeObject {
   @Override
   protected void closeAll() {
     try {
-      database.closeAll();
+      ConnectionContext.getInstance().end();
       reader.close();
       writer.close();
     } catch (IOException ex) {

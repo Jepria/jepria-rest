@@ -14,7 +14,6 @@ public abstract class LargeObject {
   protected String sqlClearLob;
   protected String sqlObtainOutputStream;
   protected String sqlObtainInputStream;
-  protected Db database;
   
   // Параметры, идентифицирующие изменяемое поле Blob
   protected String tableName;

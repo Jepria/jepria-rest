@@ -66,7 +66,7 @@ public class BinaryLargeObject extends LargeObject {
       cs.execute();
       
       // Получаем поток для записи поля BINARY_FILE
-      cs = database.prepare(super.sqlObtainOutputStream);
+      cs = ConnectionContext.getInstance().prepareCall(super.sqlObtainOutputStream);
       ResultSet rs = cs.executeQuery();
       if(rs.next()) {
             Blob blob = (Blob) rs.getBlob(1);
@@ -79,7 +79,7 @@ public class BinaryLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      database.rollback();
+      ConnectionContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin write error", ex);
     }
@@ -109,7 +109,7 @@ public class BinaryLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      database.rollback();
+      ConnectionContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin write error", ex);
     }
@@ -171,7 +171,7 @@ public class BinaryLargeObject extends LargeObject {
    */
   protected void closeAll() {
     try {
-      database.closeAll();
+      ConnectionContext.getInstance().end();
       if(input != null) {
         input.close();
       }

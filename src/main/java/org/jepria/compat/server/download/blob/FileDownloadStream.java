@@ -178,8 +178,6 @@ public class FileDownloadStream extends InputStream {
 
       } catch (SpaceException e) {
         e.printStackTrace();
-      } catch (SQLException ex) {
-        throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
           ConnectionContext.getInstance().end();
@@ -262,8 +260,6 @@ public class FileDownloadStream extends InputStream {
 
       } catch (SpaceException e) {
         e.printStackTrace();
-      } catch (SQLException ex) {
-        throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
           ConnectionContext.getInstance().end();

@@ -8,7 +8,6 @@ import org.jepria.compat.server.download.blob.FileDownloadStream;
 import org.jepria.compat.server.download.clob.FileDownloadReader;
 import org.jepria.compat.server.download.clob.TextFileDownloadImpl;
 import org.jepria.compat.server.util.JepServerUtil;
-import org.jepria.compat.shared.exceptions.UnsupportedException;
 import org.jepria.compat.shared.util.JepRiaUtil;
 import org.jepria.server.data.RecordIdParser;
 
@@ -242,7 +241,7 @@ public class DownloadServlet extends HttpServlet {
             fieldName,
             primaryKeyMap);
       } else {
-        throw new UnsupportedException(this.getClass() + ".doGet(): " + fileType + " field type does not supported for download.");
+        throw new RuntimeException(this.getClass() + ".doGet(): " + fileType + " field type does not supported for download.");
       }
     } catch (Throwable th) {
       logger.error("doGet() threw exception: ", th);

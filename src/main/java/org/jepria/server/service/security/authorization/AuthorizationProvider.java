@@ -1,5 +1,6 @@
 package org.jepria.server.service.security.authorization;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.apache.log4j.Logger;
@@ -17,5 +18,5 @@ public abstract class AuthorizationProvider {
    * @return    идентификатор авторизованного пользователя
    * @throws SQLException  проблема авторизации 
    */
-  abstract public Integer logon() throws SQLException;
+  abstract public Integer logon(Connection connection) throws SQLException;
 }

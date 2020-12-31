@@ -154,8 +154,6 @@ public class FileUploadWriter extends Writer {
 
       } catch (SpaceException e) {
         e.printStackTrace();
-      } catch (SQLException ex) {
-        throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
           ConnectionContext.getInstance().end();
@@ -238,8 +236,6 @@ public class FileUploadWriter extends Writer {
 
       } catch (SpaceException e) {
         e.printStackTrace();
-      } catch (SQLException ex) {
-        throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
           ConnectionContext.getInstance().end();

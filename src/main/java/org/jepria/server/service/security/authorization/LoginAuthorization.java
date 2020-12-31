@@ -1,28 +1,21 @@
 package org.jepria.server.service.security.authorization;
 
 import java.sql.CallableStatement;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
-
-import org.jepria.compat.server.db.Db;
 
 /**
  * Авторизация по логину.
  */
 public class LoginAuthorization extends AuthorizationProvider {
-
-  /**
-   * Подключение к БД
-   */
-  protected Db db;
   
   /**
    * Логин учетной записи
    */
   protected String login;
 
-  LoginAuthorization(Db db, String login) {
-    this.db = db;
+  LoginAuthorization(String login) {
     this.login = login;
   }
     
@@ -30,10 +23,10 @@ public class LoginAuthorization extends AuthorizationProvider {
    * {@inheritDoc}
    */
   @Override
-  public Integer logon() throws SQLException {
+  public Integer logon(Connection connection) throws SQLException {
       logger.trace("logon(Db db, " + login + ")");
       
-      Integer result = null;
+      Integer result;
       String sqlQuery = 
         " begin" 
         + "  ? := pkg_Operator.Login(" 
@@ -41,8 +34,8 @@ public class LoginAuthorization extends AuthorizationProvider {
         + "  );" 
         + "  ? := pkg_Operator.GetCurrentUserID;" 
         + " end;";
-      try {
-        CallableStatement callableStatement = db.prepare(sqlQuery);
+      try(CallableStatement callableStatement = connection.prepareCall(sqlQuery)) {
+        
         // Установим Логин.
         callableStatement.setString(2, login); 
 
@@ -52,10 +45,9 @@ public class LoginAuthorization extends AuthorizationProvider {
         callableStatement.execute();
 
         result = callableStatement.getInt(3);
-        if(callableStatement.wasNull()) result = null;
-
-      } finally {
-        db.closeStatement(sqlQuery);
+        if(callableStatement.wasNull()) {
+          result = null;
+        }
       }
 
       return result;
