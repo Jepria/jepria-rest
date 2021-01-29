@@ -1,8 +1,11 @@
-package org.jepria.compat.server.dao.transaction.annotation;
+package org.jepria.server.transaction.annotation;
 
-import java.lang.annotation.*;
+import org.jepria.server.transaction.handler.EndTransactionHandler;
 
-import org.jepria.compat.server.dao.transaction.handler.EndTransactionHandler;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Позволяет указать кастомный обработчик начала транзакции.<br/>

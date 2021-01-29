@@ -1,8 +1,9 @@
-package org.jepria.server.data;
+package org.jepria.server.data.dao;
 
 import org.jepria.compat.server.dao.ResultSetMapper;
 
 import java.io.*;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -325,4 +326,6 @@ public interface DaoSupport {
     // TODO return null if there is no clob (empty clob), instead of a clob with value ""
     return stringWriter.toString();
   }
+  
+  void setModule(String moduleName, String actionName) throws SQLException;
 }

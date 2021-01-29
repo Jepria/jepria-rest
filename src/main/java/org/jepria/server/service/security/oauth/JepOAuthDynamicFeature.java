@@ -1,15 +1,14 @@
 package org.jepria.server.service.security.oauth;
 
 import org.glassfish.jersey.server.model.AnnotatedMethod;
-import org.jepria.compat.server.db.Db;
 import org.jepria.oauth.sdk.TokenInfoResponse;
 import org.jepria.oauth.sdk.jaxrs.OAuthContainerRequestFilter;
 import org.jepria.server.data.RuntimeSQLException;
+import org.jepria.server.data.sql.CallContext;
 import org.jepria.server.env.EnvironmentPropertySupport;
 import org.jepria.server.service.security.SecurityContext;
 
 import javax.annotation.Priority;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -65,24 +64,10 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
 
         @Override
         public boolean isUserInRole(String s) {
-          Db db = new Db(DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME);
           try {
-            return super.isRole(db, s);
+            return super.isRole(DEFAULT_DATA_SOURCE_JNDI_NAME, s);
           } catch (SQLException sqlException1) {
             throw new RuntimeSQLException(sqlException1);
-          } catch (Throwable ex) {
-            if (ex.getMessage().contains("DataSource 'java:/comp/env/" + DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME + "' not found")) {
-              db = new Db(DEFAULT_DATA_SOURCE_JNDI_NAME);
-              try {
-                return super.isRole(db, s);
-              } catch (SQLException sqlException2) {
-                throw new RuntimeSQLException(sqlException2);
-              }
-            } else {
-              throw ex;
-            }
-          } finally {
-            db.closeAll();
           }
         }
       };
@@ -101,24 +86,18 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
     protected String getClientSecret() {
       String clientSecret = (String) request.getSession().getAttribute(CLIENT_SECRET_PROPERTY);
       if (clientSecret == null) {
-        Db db = new Db(DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME);
+        CallContext.getInstance().begin(DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME, "OAuth");
         try {
-          clientSecret = OAuthDbHelper.getClientSecret(db, getClientId());
-        } catch (SQLException ex) {
-          throw new RuntimeSQLException(ex);
+          clientSecret = OAuthDbHelper.getClientSecret(CallContext.getInstance().getConnection(), getClientId());
         } catch (Throwable ex) {
           if (ex.getMessage().contains("DataSource 'java:/comp/env/" + DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME + "' not found")) {
-            db = new Db(getBackupDatasourceJndiName());
-            try {
-              clientSecret = OAuthDbHelper.getClientSecret(db, getClientId());
-            } catch (SQLException sqlException2) {
-              throw new RuntimeSQLException(sqlException2);
-            }
+            CallContext.getInstance().begin(getBackupDatasourceJndiName(), "OAuth");
+              clientSecret = OAuthDbHelper.getClientSecret(CallContext.getInstance().getConnection(), getClientId());
           } else {
             throw ex;
           }
         } finally {
-          db.closeAll();
+          CallContext.getInstance().end();
         }
       }
       request.getSession().setAttribute(CLIENT_SECRET_PROPERTY, clientSecret);

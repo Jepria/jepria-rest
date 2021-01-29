@@ -1,16 +1,15 @@
 package org.jepria.compat.server.upload.clob;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.server.upload.FileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
+import org.jepria.server.data.sql.CallContext;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -110,7 +109,7 @@ public class FileUploadWriter extends Writer {
       bufferedReader = new BufferedReader(reader);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileUpload.beginWrite(
@@ -146,19 +145,17 @@ public class FileUploadWriter extends Writer {
 
         if (transactionable) {
           if (fileUpload.isCancelled()) {
-            CallContext.rollback();
+            CallContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            CallContext.getInstance().commit();
           }
         }
 
       } catch (SpaceException e) {
         e.printStackTrace();
-      } catch (SQLException ex) {
-        throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          CallContext.getInstance().end();
         }
       }
     }
@@ -194,7 +191,7 @@ public class FileUploadWriter extends Writer {
       bufferedReader = new BufferedReader(reader);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileUpload.beginWrite(
@@ -230,19 +227,17 @@ public class FileUploadWriter extends Writer {
 
         if (transactionable) {
           if (fileUpload.isCancelled()) {
-            CallContext.rollback();
+            CallContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            CallContext.getInstance().commit();
           }
         }
 
       } catch (SpaceException e) {
         e.printStackTrace();
-      } catch (SQLException ex) {
-        throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          CallContext.getInstance().end();
         }
       }
     }

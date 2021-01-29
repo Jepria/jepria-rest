@@ -1,6 +1,6 @@
-package org.jepria.compat.server.dao.transaction.handler;
+package org.jepria.server.transaction.handler;
 
-import org.jepria.compat.server.dao.CallContext;
+import org.jepria.server.data.sql.CallContext;
 
 /**
  * Интерфейс обработчика завершения транзакции.<br/>
@@ -17,7 +17,7 @@ public interface EndTransactionHandler {
    *   зафиксировать транзакцию, вызвав {@link CallContext#commit()}.</li>
    *   <li>Если было перехвачено исключение (<code>caught != null</code>), необходимо 
    *   откатить транзакцию, вызвав {@link CallContext#rollback()}.</li>
-   *   <li>В любом случае необходимо освободить ресурсы, вызвав {@link CallContext#end()}.
+   *   <li>В любом случае необходимо освободить ресурсы, вызвав {@link CallContext#close()} ()}.
    *   <li>Если в ходе транзакции возникло исключение, или же оно возникло во время
    *   commit либо rollback, следует выбросить последнее возникшее исключение.</li>
    * </ul>

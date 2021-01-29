@@ -1,10 +1,9 @@
 package org.jepria.server.service.security.authorization;
 
 import java.sql.CallableStatement;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
-
-import org.jepria.compat.server.db.Db;
 
 /**
  * Парольная авторизация.
@@ -16,8 +15,8 @@ public class AuthorizationByPassword extends LoginAuthorization {
    */
   private String password;
 
-  AuthorizationByPassword(Db db, String login, String password) {
-    super(db, login);
+  AuthorizationByPassword(String login, String password) {
+    super(login);
     this.password = password;
   }
    
@@ -25,7 +24,7 @@ public class AuthorizationByPassword extends LoginAuthorization {
    * {@inheritDoc}
    */
   @Override
-  public Integer logon() throws SQLException {
+  public Integer logon(Connection connection) throws SQLException {
     logger.trace("logon(Db db, " + login + ", " + password + ")");
       
       Integer result = null;
@@ -37,8 +36,7 @@ public class AuthorizationByPassword extends LoginAuthorization {
         + ");" 
         + "  ? := pkg_Operator.GetCurrentUserID;" 
         + " end;";
-    try {
-      CallableStatement callableStatement = db.prepare(sqlQuery);
+    try (CallableStatement callableStatement = connection.prepareCall(sqlQuery)) {
       // Установим Логин.
       callableStatement.setString(2, login);
       // Установим Пароль.
@@ -53,8 +51,6 @@ public class AuthorizationByPassword extends LoginAuthorization {
       if (callableStatement.wasNull())
         result = null;
 
-    } finally {
-      db.closeStatement(sqlQuery);
     }
 
     return result;

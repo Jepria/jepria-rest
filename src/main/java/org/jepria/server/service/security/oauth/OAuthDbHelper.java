@@ -1,10 +1,10 @@
 package org.jepria.server.service.security.oauth;
 
 import oracle.jdbc.OracleTypes;
-import org.jepria.compat.server.db.Db;
 import org.jepria.server.data.RuntimeSQLException;
 
 import java.sql.CallableStatement;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -13,9 +13,9 @@ import static org.jepria.oauth.sdk.OAuthConstants.CLIENT_SECRET;
 
 public class OAuthDbHelper {
   
-  public static String getClientSecret(Db db, String clientId) throws SQLException, NullPointerException {
+  public static String getClientSecret(Connection connection, String clientId) throws NullPointerException {
     Objects.requireNonNull(clientId);
-    Objects.requireNonNull(db);
+    Objects.requireNonNull(connection);
     String sqlQuery = "begin " +
       "? := pkg_OAuth.findClient(" +
         "clientShortName => ?," +
@@ -26,8 +26,7 @@ public class OAuthDbHelper {
       "); " +
       "end;";
     String result = null;
-    CallableStatement cs = db.prepare(sqlQuery);
-    try {
+    try (CallableStatement cs = connection.prepareCall(sqlQuery)) {
       cs.registerOutParameter(1, OracleTypes.CURSOR);
       cs.setString(2, clientId);
       cs.executeQuery();
@@ -39,8 +38,6 @@ public class OAuthDbHelper {
       }
     } catch (SQLException ex) {
       throw new RuntimeSQLException(ex);
-    } finally {
-      cs.close();
     }
     return result;
   }

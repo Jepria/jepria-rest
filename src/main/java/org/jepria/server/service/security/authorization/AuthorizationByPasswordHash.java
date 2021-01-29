@@ -1,10 +1,9 @@
 package org.jepria.server.service.security.authorization;
 
 import java.sql.CallableStatement;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
-
-import org.jepria.compat.server.db.Db;
 
 /**
  * Авторизация по хэш-паролю.
@@ -16,8 +15,8 @@ public class AuthorizationByPasswordHash extends LoginAuthorization {
    */
   private String hash;
 
-  AuthorizationByPasswordHash(Db db, String login, String hash) {
-    super(db, login);
+  AuthorizationByPasswordHash(String login, String hash) {
+    super(login);
     this.hash = hash;
   }
    
@@ -25,10 +24,10 @@ public class AuthorizationByPasswordHash extends LoginAuthorization {
    * {@inheritDoc}
    */
   @Override
-  public Integer logon() throws SQLException {
+  public Integer logon(Connection connection) throws SQLException {
     logger.trace("logon(Db db, " + login + ", " + hash + ")");
         
-      Integer result = null;
+      Integer result;
       String sqlQuery = 
         " begin" 
         + "  ? := pkg_Operator.Login("
@@ -38,8 +37,7 @@ public class AuthorizationByPasswordHash extends LoginAuthorization {
         + ");" 
         + "  ? := pkg_Operator.GetCurrentUserID;" 
         + " end;";
-    try {
-      CallableStatement callableStatement = db.prepare(sqlQuery);
+    try (CallableStatement callableStatement = connection.prepareCall(sqlQuery)) {
       // Установим Логин.
       callableStatement.setString(2, login);
       // Установим Пароль.
@@ -53,13 +51,10 @@ public class AuthorizationByPasswordHash extends LoginAuthorization {
       callableStatement.execute();
 
       result = callableStatement.getInt(5);
-      if (callableStatement.wasNull())
+      if (callableStatement.wasNull()) {
         result = null;
-
-    } finally {
-      db.closeStatement(sqlQuery);
+      }
     }
-
     return result;
   }
 }

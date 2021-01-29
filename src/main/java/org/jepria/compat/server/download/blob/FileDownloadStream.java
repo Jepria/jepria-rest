@@ -1,16 +1,15 @@
 package org.jepria.compat.server.download.blob;
 
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.download.FileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
+import org.jepria.server.data.sql.CallContext;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -132,7 +131,7 @@ public class FileDownloadStream extends InputStream {
       writeStream = new BufferedOutputStream(fileStream);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -170,19 +169,17 @@ public class FileDownloadStream extends InputStream {
 
         if (transactionable) {
           if (fileDownload.isCancelled()) {
-            CallContext.rollback();
+            CallContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            CallContext.getInstance().commit();
           }
         }
 
       } catch (SpaceException e) {
         e.printStackTrace();
-      } catch (SQLException ex) {
-        throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          CallContext.getInstance().end();
         }
       }
     }
@@ -216,7 +213,7 @@ public class FileDownloadStream extends InputStream {
       writeStream = new BufferedOutputStream(fileStream);
 
       if (transactionable) {
-        CallContext.begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -254,19 +251,17 @@ public class FileDownloadStream extends InputStream {
 
         if (transactionable) {
           if (fileDownload.isCancelled()) {
-            CallContext.rollback();
+            CallContext.getInstance().rollback();
           } else {
-            CallContext.commit();
+            CallContext.getInstance().commit();
           }
         }
 
       } catch (SpaceException e) {
         e.printStackTrace();
-      } catch (SQLException ex) {
-        throw new SystemException("end write error", ex);
       } finally {
         if (transactionable) {
-          CallContext.end();
+          CallContext.getInstance().end();
         }
       }
     }

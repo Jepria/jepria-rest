@@ -7,16 +7,13 @@ import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.jepria.compat.server.dao.CallContext;
-import org.jepria.compat.server.dao.DaoSupport;
 import org.jepria.compat.server.db.LargeObject;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
+import org.jepria.server.data.dao.DaoSupport;
+import org.jepria.server.data.sql.CallContext;
 
 /**
  * Класс поддерживает запись в поле BINARY_FILE.
@@ -63,14 +60,13 @@ public class BinaryLargeObject extends LargeObject {
   public int beginWrite() throws ApplicationException {
     int result = 0;
     try {
-      database = CallContext.getDb();
       // Сбрасываем значение поля
-      CallableStatement cs = database.prepare(super.sqlClearLob);
-      DaoSupport.setModule(CallContext.getModuleName(), "UploadBLOB");
+      CallableStatement cs = CallContext.getInstance().prepareCall(super.sqlClearLob);
+      DaoSupport.getInstance().setModule(CallContext.getInstance().getModuleName(), "UploadBLOB");
       cs.execute();
       
       // Получаем поток для записи поля BINARY_FILE
-      cs = database.prepare(super.sqlObtainOutputStream);
+      cs = CallContext.getInstance().prepareCall(super.sqlObtainOutputStream);
       ResultSet rs = cs.executeQuery();
       if(rs.next()) {
             Blob blob = (Blob) rs.getBlob(1);
@@ -83,7 +79,7 @@ public class BinaryLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      database.rollback();
+      CallContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin write error", ex);
     }
@@ -98,11 +94,9 @@ public class BinaryLargeObject extends LargeObject {
   public int beginRead() throws ApplicationException {
     int result = 0;
     try {
-      database = CallContext.getDb();
-      
       // Получаем поток для записи поля BINARY_FILE
-      CallableStatement cs = database.prepare(super.sqlObtainInputStream);
-      DaoSupport.setModule(CallContext.getModuleName(), "DownloadBLOB");
+      CallableStatement cs = CallContext.getInstance().prepareCall(super.sqlObtainInputStream);
+      DaoSupport.getInstance().setModule(CallContext.getInstance().getModuleName(), "DownloadBLOB");
       ResultSet rs = cs.executeQuery();
       if(rs.next()) {
             Blob blob = (Blob) rs.getBlob(1);
@@ -115,7 +109,7 @@ public class BinaryLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      database.rollback();
+      CallContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin write error", ex);
     }
@@ -177,7 +171,7 @@ public class BinaryLargeObject extends LargeObject {
    */
   protected void closeAll() {
     try {
-      database.closeAll();
+      CallContext.getInstance().end();
       if(input != null) {
         input.close();
       }

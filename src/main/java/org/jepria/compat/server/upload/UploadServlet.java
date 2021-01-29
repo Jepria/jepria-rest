@@ -13,7 +13,6 @@ import org.jepria.compat.server.upload.clob.FileUploadWriter;
 import org.jepria.compat.server.upload.clob.TextFileUploadImpl;
 import org.jepria.compat.server.util.JepServerUtil;
 import org.jepria.compat.shared.exceptions.ApplicationException;
-import org.jepria.compat.shared.exceptions.UnsupportedException;
 import org.jepria.compat.shared.util.JepRiaUtil;
 import org.jepria.server.data.RecordIdParser;
 
@@ -200,7 +199,7 @@ public class UploadServlet extends HttpServlet {
                       fieldName,
                       getPrimaryKeyMap(items));
                 } else {
-                  throw new UnsupportedException(this.getClass() + ".doPost(): " + fileType + " field type does not supported for upload.");
+                  throw new RuntimeException(this.getClass() + ".doPost(): " + fileType + " field type does not supported for upload.");
                 }
               } catch (Throwable th) {
                 String message = "doPost().upload error in '" + fieldName + "' field: " + th.getMessage();

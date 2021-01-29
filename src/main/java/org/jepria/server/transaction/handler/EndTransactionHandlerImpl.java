@@ -1,6 +1,6 @@
-package org.jepria.compat.server.dao.transaction.handler;
+package org.jepria.server.transaction.handler;
 
-import org.jepria.compat.server.dao.CallContext;
+import org.jepria.server.data.sql.CallContext;
 
 import java.sql.SQLException;
 
@@ -18,7 +18,7 @@ public class EndTransactionHandlerImpl implements EndTransactionHandler {
    *   ({@link CallContext#commit()}).</li>
    *   <li>Если было перехвачено исключение (<code>caught != null</code>), транзакция
    *   откатывается ({@link CallContext#rollback()}).</li>
-   *   <li>С помощью {@link CallContext#end()} освобождаются ресурсы.
+   *   <li>С помощью {@link CallContext#close()} ()} освобождаются ресурсы.
    *   <li>Если в ходе транзакции возникло исключение, или же оно возникло во время
    *   commit либо rollback, выбрасывается последнее возникшее исключение.</li>
    * </ul>
@@ -28,17 +28,16 @@ public class EndTransactionHandlerImpl implements EndTransactionHandler {
   public void handle(Throwable caught) {
     try {
       if (caught == null) {
-        CallContext.commit();
+        CallContext.getInstance().getConnection().commit();
       }
       else {
-        CallContext.rollback();
+        CallContext.getInstance().getConnection().rollback();
       }
     } catch (SQLException e) {
       // Необходимо сигнализировать о последнем выброшенном исключении.
       caught = e;
-    }
-    finally {
-      CallContext.end();
+    } finally {
+      CallContext.getInstance().end();
     }
   }
 

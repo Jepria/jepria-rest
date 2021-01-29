@@ -2,12 +2,10 @@ package org.jepria.compat.server.download.clob;
 
 import org.jepria.compat.server.db.clob.TextLargeObject;
 import org.jepria.compat.server.download.AbstractFileDownload;
-import org.jepria.compat.server.dao.CallContext;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,8 +37,6 @@ public class TextFileDownloadImpl extends AbstractFileDownload implements TextFi
     } catch (IllegalStateException ex) {
       ex.printStackTrace();
       throw new SystemException("begin write error", ex);
-    } finally {
-      storedContext = CallContext.detach();
     }
 
     return result;
@@ -70,8 +66,6 @@ public class TextFileDownloadImpl extends AbstractFileDownload implements TextFi
     } catch (IllegalStateException ex) {
       ex.printStackTrace();
       throw new SystemException("begin write error", ex);
-    } finally {
-      storedContext = CallContext.detach();
     }
 
     return result;
@@ -85,7 +79,6 @@ public class TextFileDownloadImpl extends AbstractFileDownload implements TextFi
    */
   @Override
   public int continueRead(char[] dataBlock) throws SpaceException {
-    CallContext.attach(storedContext);
     boolean cancelled = true;
     int result = 0;
     try {
@@ -99,9 +92,13 @@ public class TextFileDownloadImpl extends AbstractFileDownload implements TextFi
       if (cancelled) {
         cancel();
       }
-      storedContext = CallContext.detach();
     }
     
     return result;
+  }
+  
+  @Override
+  public int beginRead(Object rowId) {
+    throw new UnsupportedOperationException();
   }
 }

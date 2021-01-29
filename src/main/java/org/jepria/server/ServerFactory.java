@@ -1,6 +1,6 @@
 package org.jepria.server;
 
-import org.jepria.compat.server.dao.transaction.TransactionFactory;
+import org.jepria.server.transaction.TransactionFactory;
 
 /**
  * Серверная фабрика.

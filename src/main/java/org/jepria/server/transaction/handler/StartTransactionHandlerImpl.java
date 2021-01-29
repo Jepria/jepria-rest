@@ -1,7 +1,6 @@
-package org.jepria.compat.server.dao.transaction.handler;
+package org.jepria.server.transaction.handler;
 
-import org.jepria.compat.server.dao.CallContext;
-import org.jepria.compat.server.db.Db;
+import org.jepria.server.data.sql.CallContext;
 
 /**
  * Стандартная реализация обработчика старта транзакции.<br/>
@@ -13,8 +12,7 @@ public class StartTransactionHandlerImpl implements StartTransactionHandler {
    * Единственное действие &mdash; вызов {@link CallContext#begin(String, String)}.
    */
   @Override
-  public Db handle(String dataSourceJndiName, String moduleName) {
-    CallContext.begin(dataSourceJndiName, moduleName);
-    return CallContext.getDb();
+  public void handle(String dataSourceJndiName, String moduleName) {
+    CallContext.getInstance().begin(dataSourceJndiName, moduleName);
   }
 }
