@@ -1,6 +1,6 @@
 package org.jepria.server.transaction.handler;
 
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 import java.sql.SQLException;
 
@@ -15,10 +15,10 @@ public class EndTransactionHandlerImpl implements EndTransactionHandler {
    * Выполняет следующие действия:
    * <ul>
    *   <li>Если в ходе транзакции не возникло исключения, то транзакция фиксируется
-   *   ({@link ConnectionContext#commit()}).</li>
+   *   ({@link CallContext#commit()}).</li>
    *   <li>Если было перехвачено исключение (<code>caught != null</code>), транзакция
-   *   откатывается ({@link ConnectionContext#rollback()}).</li>
-   *   <li>С помощью {@link ConnectionContext#close()} ()} освобождаются ресурсы.
+   *   откатывается ({@link CallContext#rollback()}).</li>
+   *   <li>С помощью {@link CallContext#close()} ()} освобождаются ресурсы.
    *   <li>Если в ходе транзакции возникло исключение, или же оно возникло во время
    *   commit либо rollback, выбрасывается последнее возникшее исключение.</li>
    * </ul>
@@ -28,17 +28,16 @@ public class EndTransactionHandlerImpl implements EndTransactionHandler {
   public void handle(Throwable caught) {
     try {
       if (caught == null) {
-        ConnectionContext.getInstance().getConnection().commit();
+        CallContext.getInstance().getConnection().commit();
       }
       else {
-        ConnectionContext.getInstance().getConnection().rollback();
+        CallContext.getInstance().getConnection().rollback();
       }
     } catch (SQLException e) {
       // Необходимо сигнализировать о последнем выброшенном исключении.
       caught = e;
-    }
-    finally {
-      ConnectionContext.getInstance().end();
+    } finally {
+      CallContext.getInstance().end();
     }
   }
 

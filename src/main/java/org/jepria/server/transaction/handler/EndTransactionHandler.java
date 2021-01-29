@@ -1,6 +1,6 @@
 package org.jepria.server.transaction.handler;
 
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 /**
  * Интерфейс обработчика завершения транзакции.<br/>
@@ -14,10 +14,10 @@ public interface EndTransactionHandler {
    * При кастомной реализации необходимо выполнение следующих требований:
    * <ul>
    *   <li>Если в ходе транзакции не возникло исключения, то необходимо
-   *   зафиксировать транзакцию, вызвав {@link ConnectionContext#commit()}.</li>
+   *   зафиксировать транзакцию, вызвав {@link CallContext#commit()}.</li>
    *   <li>Если было перехвачено исключение (<code>caught != null</code>), необходимо 
-   *   откатить транзакцию, вызвав {@link ConnectionContext#rollback()}.</li>
-   *   <li>В любом случае необходимо освободить ресурсы, вызвав {@link ConnectionContext#close()} ()}.
+   *   откатить транзакцию, вызвав {@link CallContext#rollback()}.</li>
+   *   <li>В любом случае необходимо освободить ресурсы, вызвав {@link CallContext#close()} ()}.
    *   <li>Если в ходе транзакции возникло исключение, или же оно возникло во время
    *   commit либо rollback, следует выбросить последнее возникшее исключение.</li>
    * </ul>

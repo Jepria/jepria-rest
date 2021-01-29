@@ -1,7 +1,7 @@
 package org.jepria.server.service.security;
 
 import oracle.jdbc.OracleTypes;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
@@ -28,20 +28,20 @@ public abstract class SecurityContext implements javax.ws.rs.core.SecurityContex
             "); " +
             "end;";
     int result;
-    ConnectionContext.getInstance().begin(datasourceJndiName, "");
-    try (CallableStatement callableStatement = ConnectionContext.getInstance().prepareCall(sqlQuery)) {
+    CallContext.getInstance().begin(datasourceJndiName, "");
+    try (CallableStatement callableStatement = CallContext.getInstance().prepareCall(sqlQuery)) {
       callableStatement.registerOutParameter(1, OracleTypes.INTEGER);
       callableStatement.setInt(2, operatorId);
       callableStatement.setString(3, roleShortName);
       callableStatement.execute();
       result = new Integer(callableStatement.getInt(1));
       if (callableStatement.wasNull()) result = 0;
-      ConnectionContext.getInstance().commit();
+      CallContext.getInstance().commit();
     } catch (SQLException exception) {
-      ConnectionContext.getInstance().rollback();
+      CallContext.getInstance().rollback();
       throw exception;
     } finally {
-      ConnectionContext.getInstance().end();
+      CallContext.getInstance().end();
     }
     return result == 1;
   }

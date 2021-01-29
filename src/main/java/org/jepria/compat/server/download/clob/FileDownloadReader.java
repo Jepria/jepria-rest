@@ -4,13 +4,12 @@ import org.jepria.compat.server.download.FileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -100,7 +99,7 @@ public class FileDownloadReader extends Reader {
       bufferedWriter = new BufferedWriter(writer);
   
       if (transactionable) {
-        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -137,9 +136,9 @@ public class FileDownloadReader extends Reader {
   
           if (transactionable) {
             if (fileDownload.isCancelled()) {
-              ConnectionContext.getInstance().rollback();
+              CallContext.getInstance().rollback();
             } else {
-              ConnectionContext.getInstance().commit();
+              CallContext.getInstance().commit();
             }
           }
 
@@ -147,7 +146,7 @@ public class FileDownloadReader extends Reader {
           e.printStackTrace();
         } finally {
           if (transactionable) {
-            ConnectionContext.getInstance().end();
+            CallContext.getInstance().end();
           }
         }
       }
@@ -191,7 +190,7 @@ public class FileDownloadReader extends Reader {
       bufferedWriter = new BufferedWriter(writer);
 
       if (transactionable) {
-        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -228,9 +227,9 @@ public class FileDownloadReader extends Reader {
   
           if (transactionable) {
             if (fileDownload.isCancelled()) {
-              ConnectionContext.getInstance().rollback();
+              CallContext.getInstance().rollback();
             } else {
-              ConnectionContext.getInstance().commit();
+              CallContext.getInstance().commit();
             }
           }
 
@@ -238,7 +237,7 @@ public class FileDownloadReader extends Reader {
           e.printStackTrace();
         } finally {
           if (transactionable) {
-            ConnectionContext.getInstance().end();
+            CallContext.getInstance().end();
           }
         }
       }

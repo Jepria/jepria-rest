@@ -2,9 +2,7 @@ package org.jepria.compat.server.upload;
 
 import org.jepria.compat.server.db.LargeObject;
 import org.jepria.compat.server.exceptions.SpaceException;
-import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
-import org.jepria.server.data.sql.ConnectionContext;
 
 /**
  * Абстрактный базовый класс для загрузки файла на сервер.

@@ -2,7 +2,7 @@ package org.jepria.server.service.security;
 
 import org.glassfish.jersey.server.model.AnnotatedMethod;
 import org.jepria.server.data.RuntimeSQLException;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 import javax.annotation.Priority;
 import javax.servlet.http.HttpServletRequest;
@@ -70,8 +70,8 @@ public class HttpBasicDynamicFeature implements DynamicFeature {
       }
       authString = authString.replaceFirst("[Bb]asic ", "");
       String[] credentials = new String(Base64.getDecoder().decode(authString)).split(":");
-      ConnectionContext.getInstance().begin(DEFAULT_DATA_SOURCE_JNDI_NAME, "");
-      Connection connection = ConnectionContext.getInstance().getConnection();
+      CallContext.getInstance().begin(DEFAULT_DATA_SOURCE_JNDI_NAME, "");
+      Connection connection = CallContext.getInstance().getConnection();
       try {
         Integer operatorId;
         if (PASSWORD.equals(passwordType)) {
@@ -94,14 +94,14 @@ public class HttpBasicDynamicFeature implements DynamicFeature {
             return BASIC_AUTH;
           }
         });
-        ConnectionContext.getInstance().commit();
+        CallContext.getInstance().commit();
       } catch (SQLException e) {
-          ConnectionContext.getInstance().rollback();
+          CallContext.getInstance().rollback();
         requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
             .header(HttpHeaders.WWW_AUTHENTICATE, "Basic").build());
         return;
       } finally {
-        ConnectionContext.getInstance().end();
+        CallContext.getInstance().end();
       }
     }
   }

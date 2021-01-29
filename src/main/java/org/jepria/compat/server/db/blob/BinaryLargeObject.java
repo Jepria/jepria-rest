@@ -13,7 +13,7 @@ import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
 import org.jepria.server.data.dao.DaoSupport;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 /**
  * Класс поддерживает запись в поле BINARY_FILE.
@@ -61,12 +61,12 @@ public class BinaryLargeObject extends LargeObject {
     int result = 0;
     try {
       // Сбрасываем значение поля
-      CallableStatement cs = ConnectionContext.getInstance().prepareCall(super.sqlClearLob);
-      DaoSupport.getInstance().setModule(ConnectionContext.getInstance().getModuleName(), "UploadBLOB");
+      CallableStatement cs = CallContext.getInstance().prepareCall(super.sqlClearLob);
+      DaoSupport.getInstance().setModule(CallContext.getInstance().getModuleName(), "UploadBLOB");
       cs.execute();
       
       // Получаем поток для записи поля BINARY_FILE
-      cs = ConnectionContext.getInstance().prepareCall(super.sqlObtainOutputStream);
+      cs = CallContext.getInstance().prepareCall(super.sqlObtainOutputStream);
       ResultSet rs = cs.executeQuery();
       if(rs.next()) {
             Blob blob = (Blob) rs.getBlob(1);
@@ -79,7 +79,7 @@ public class BinaryLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      ConnectionContext.getInstance().rollback();
+      CallContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin write error", ex);
     }
@@ -95,8 +95,8 @@ public class BinaryLargeObject extends LargeObject {
     int result = 0;
     try {
       // Получаем поток для записи поля BINARY_FILE
-      CallableStatement cs = ConnectionContext.getInstance().prepareCall(super.sqlObtainInputStream);
-      DaoSupport.getInstance().setModule(ConnectionContext.getInstance().getModuleName(), "DownloadBLOB");
+      CallableStatement cs = CallContext.getInstance().prepareCall(super.sqlObtainInputStream);
+      DaoSupport.getInstance().setModule(CallContext.getInstance().getModuleName(), "DownloadBLOB");
       ResultSet rs = cs.executeQuery();
       if(rs.next()) {
             Blob blob = (Blob) rs.getBlob(1);
@@ -109,7 +109,7 @@ public class BinaryLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      ConnectionContext.getInstance().rollback();
+      CallContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin write error", ex);
     }
@@ -171,7 +171,7 @@ public class BinaryLargeObject extends LargeObject {
    */
   protected void closeAll() {
     try {
-      ConnectionContext.getInstance().end();
+      CallContext.getInstance().end();
       if(input != null) {
         input.close();
       }

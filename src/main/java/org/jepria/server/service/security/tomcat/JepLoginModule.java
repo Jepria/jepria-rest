@@ -1,7 +1,7 @@
 package org.jepria.server.service.security.tomcat;
 
 import org.apache.log4j.Logger;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 import org.jepria.server.service.security.pkg_Operator;
 import org.jepria.ssoutils.JepPrincipal;
 
@@ -129,8 +129,8 @@ public class JepLoginModule implements LoginModule {
       this.username = this.username.split(LOGIN_SUFFIX_FOR_HASH_AUTHORIZATION)[0];
     }
     String password = getPassword(callbacks);
-    ConnectionContext.getInstance().begin(DEFAULT_DATA_SOURCE_JNDI_NAME, "");
-    final Connection connection = ConnectionContext.getInstance().getConnection();
+    CallContext.getInstance().begin(DEFAULT_DATA_SOURCE_JNDI_NAME, "");
+    final Connection connection = CallContext.getInstance().getConnection();
     try {
       operatorId = doJepAuthentication(connection, this.username, password, withHash);
     } catch (Throwable th) {
@@ -248,7 +248,7 @@ public class JepLoginModule implements LoginModule {
   protected void cleanup() {
     logger.trace("BEGIN cleanup()");
     
-    ConnectionContext.getInstance().end();
+    CallContext.getInstance().end();
     
     logger.trace("END cleanup()");
   }

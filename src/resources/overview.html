@@ -10,51 +10,96 @@
 </head>
 
 <body>
-  Пакет содержит базовый функционал платформы JepRia Rest.
-  <br>
-  <h2>Содержание Description</h2>
+Пакет содержит базовый функционал платформы JepRia Rest.
+<br>
+<h2>Содержание Description</h2>
+<ul>
+  <li><a href="#about">Описание</a></li>
+  <li><a href="#error">Ошибки</a></li>
+  <li><a href="#todo">Доработки</a></li>
+  <li><a href="#releaseNotes">Замечания к версиям</a></li>
+  <li><a href="changelog.html">Changelog</a></li>
+</ul>
+<h3><a name="about">Описание</a></h3> Основная идея платформы JepRia Rest - предоставить удобную обертку над Jersey
+для быстрого создания CRUD Rest сервисов.
+<h3><a name="error">Ошибки</a></h3>
+<br>
+<h3><a name="todo">Доработки</a></h3>
+<br>
+<h3><a name="releaseNotes">Замечания к версиям</a></h3>
+<h4>Версии</h4>
+<ul>
+  <li><a href="#12.3.0">12.3.0 (n/a)</a></li>
+  <li><a href="#12.2.0">12.2.0 (2020-10-19)</a></li>
+</ul>
+<h5><a name="12.3.0">12.3.0 (n/a)</a></h5>
+<div>
   <ul>
-    <li><a href="#about">Описание</a></li>
-    <li><a href="#error">Ошибки</a></li>
-    <li><a href="#todo">Доработки</a></li>
-    <li><a href="#releaseNotes">Замечания к версиям</a></li>
-    <li><a href="changelog.html">Changelog</a></li>
+    <li>Проведен рефакторинг системной части DAO.</li>
+    <li>Выведен из эксплуатации класс Db</li>
+    <li>Функционал по работе с ConnectionPool вынесен в ConnectionPool
+    </li>
+    <li>CallContext теперь поддерживает Стэк соединений.</li>
   </ul>
-  <h3><a name="about">Описание</a></h3> Основная идея платформы JepRia Rest - предоставить удобную обертку над Jersey
-  для быстрого создания CRUD Rest сервисов.
-  <h3><a name="error">Ошибки</a></h3>
-  <br>
-  <h3><a name="todo">Доработки</a></h3>
-  <br>
-  <h3><a name="releaseNotes">Замечания к версиям</a></h3>
-  <h4>Версии</h4>
-  <ul>
-    <li><a href="#12.1.0">12.2.0 (2020-10-19)</a></li>
-  </ul>
-  <h5><a name="12.1.0">12.2.0 (2020-10-19)</a></h5>
-  <ul>
-    <li><b>feat:</b>Поддержка OAuth 2.0</li>
-  </ul>
-  <p>Для подключения OAuth в существующее приложение потребуется:</p>
-  <ul>
-    <li>
-      <p>Добавить константу OAuth client_id в web.xml приложения:</p>
-      <pre>
+  <div>
+    Стэк позволяет, при необходимости, создать новое соединение внутри методов Dao.
+    Чтобы создать новое соединение внутри метода Dao потребуется:
+    <pre>
+      <code>
+        public void method() {
+          // Создать соединение (будет создан новый объект Connection в стэке вызовов)
+          CallContext.getInstance().createConnection(dataSourceJndiName, moduleName);
+          try {
+            //... логика вызова
+            CallContext.getInstance().getConnection().commit();
+          } catch (SQLException e) {
+           // Вызвать rollback в случае ошибки
+            CallContext.getInstance().getConnection().rollback();
+          } finally {
+            CallContext.getInstance().close();
+          }
+        }
+      </code>
+    </pre>
+  </div>
+  <div>
+    Чтобы закоммитить транзакцию для текущего соединения внутри метода Dao:
+    <pre>
+      <code>
+        public void method() {
+          //...
+          CallContext.getInstance().getConnection().commit();
+          //...
+        }
+      </code>
+    </pre>
+  </div>
+</div>
+<h5><a name="12.2.0">12.2.0 (2020-10-19)</a></h5>
+<ul>
+  <li><b>feat:</b>Поддержка OAuth 2.0</li>
+</ul>
+<p>Для подключения OAuth в существующее приложение потребуется:</p>
+<ul>
+  <li>
+    <p>Добавить константу OAuth client_id в web.xml приложения:</p>
+    <pre>
         &lt;context-param&gt;
           &lt;param-name&gt;oauthClientId&lt;/param-name&gt;
           &lt;param-value&gt;OAuthClient&lt;/param-value&gt;
         &lt;/context-param&gt;
       </pre>
-    </li>
-    <li>
-      <p>Зарегистировать OAuth фильтр в ApplicationConfig (только если не используется ApplicationConfigBase):</p>
-      <pre>
+  </li>
+  <li>
+    <p>Зарегистировать OAuth фильтр в ApplicationConfig (только если не используется ApplicationConfigBase):</p>
+    <pre>
         register(JepOAuthDynamicFeature.class);
       </pre>
-    </li>
-    <li>
-      <p>Добавить аннотацию <a href="/org/jepria/server/service/security/oauth/OAuth.html">@OAuth</a> в нужные JaxRs адаптеры/методы:</p>
-      <pre>
+  </li>
+  <li>
+    <p>Добавить аннотацию @OAuth в нужные JaxRs
+      адаптеры/методы:</p>
+    <pre>
 		  <code>
 	<span>@Path("/method")</span>
 	<span>@OAuth</span>
@@ -69,11 +114,11 @@
 	}
 		 </code>
       </pre>
-      <p>Аннотация над классом закрывает все методы класса, над методом закрывает только этот метод.</p>
-    </li>
-    <li>
-      <p>Если требуется поддержать Http Basic и OAuth одновременно, то следует использовать аннотацию <a href="/org/jepria/server/service/security/protection/Protected.html">@Protected</a>:</p>
-      <pre>
+    <p>Аннотация над классом закрывает все методы класса, над методом закрывает только этот метод.</p>
+  </li>
+  <li>
+    <p>Если требуется поддержать Http Basic и OAuth одновременно, то следует использовать аннотацию @Protected:</p>
+    <pre>
 		  <code>
 	<span>@Path("/method")</span>
 	<span>@Protected</span>
@@ -88,8 +133,8 @@
 	}
 		  </code>
       </pre>
-    </li>
+  </li>
   <ul>
-  <p>При неудачной авторизации будет возвращен ответ с HTTP статусом 401.
+    <p>При неудачной авторизации будет возвращен ответ с HTTP статусом 401.
 </body>
 </html>

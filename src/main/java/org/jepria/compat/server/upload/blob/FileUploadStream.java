@@ -4,13 +4,12 @@ import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.server.upload.FileUpload;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -145,7 +144,7 @@ public class FileUploadStream extends OutputStream {
       readStream = new BufferedInputStream(fileStream);
 
       if (transactionable) {
-        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileUpload.beginWrite(
@@ -181,9 +180,9 @@ public class FileUploadStream extends OutputStream {
 
         if (transactionable) {
           if (fileUpload.isCancelled()) {
-            ConnectionContext.getInstance().rollback();
+            CallContext.getInstance().rollback();
           } else {
-            ConnectionContext.getInstance().commit();
+            CallContext.getInstance().commit();
           }
         }
 
@@ -191,7 +190,7 @@ public class FileUploadStream extends OutputStream {
         e.printStackTrace();
       } finally {
         if (transactionable) {
-          ConnectionContext.getInstance().end();
+          CallContext.getInstance().end();
         }
       }
     }
@@ -234,7 +233,7 @@ public class FileUploadStream extends OutputStream {
       readStream = new BufferedInputStream(fileStream);
 
       if (transactionable) {
-        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileUpload.beginWrite(
@@ -270,9 +269,9 @@ public class FileUploadStream extends OutputStream {
 
         if (transactionable) {
           if (fileUpload.isCancelled()) {
-            ConnectionContext.getInstance().rollback();
+            CallContext.getInstance().rollback();
           } else {
-            ConnectionContext.getInstance().commit();
+            CallContext.getInstance().commit();
           }
         }
 
@@ -280,7 +279,7 @@ public class FileUploadStream extends OutputStream {
         e.printStackTrace();
       } finally {
         if (transactionable) {
-          ConnectionContext.getInstance().end();
+          CallContext.getInstance().end();
         }
       }
     }

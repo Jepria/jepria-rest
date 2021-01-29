@@ -1,6 +1,6 @@
 package org.jepria.server.transaction.handler;
 
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 /**
  * Стандартная реализация обработчика старта транзакции.<br/>
@@ -9,10 +9,10 @@ public class StartTransactionHandlerImpl implements StartTransactionHandler {
 
   /**
    * Стандартная реализация обработки начала транзакции.<br/>
-   * Единственное действие &mdash; вызов {@link ConnectionContext#begin(String, String)}.
+   * Единственное действие &mdash; вызов {@link CallContext#begin(String, String)}.
    */
   @Override
   public void handle(String dataSourceJndiName, String moduleName) {
-    ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
+    CallContext.getInstance().begin(dataSourceJndiName, moduleName);
   }
 }

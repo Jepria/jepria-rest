@@ -4,7 +4,7 @@ import org.glassfish.jersey.server.model.AnnotatedMethod;
 import org.jepria.oauth.sdk.TokenInfoResponse;
 import org.jepria.oauth.sdk.jaxrs.OAuthContainerRequestFilter;
 import org.jepria.server.data.RuntimeSQLException;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 import org.jepria.server.env.EnvironmentPropertySupport;
 import org.jepria.server.service.security.SecurityContext;
 
@@ -86,18 +86,18 @@ public class JepOAuthDynamicFeature implements DynamicFeature {
     protected String getClientSecret() {
       String clientSecret = (String) request.getSession().getAttribute(CLIENT_SECRET_PROPERTY);
       if (clientSecret == null) {
-        ConnectionContext.getInstance().begin(DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME, "OAuth");
+        CallContext.getInstance().begin(DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME, "OAuth");
         try {
-          clientSecret = OAuthDbHelper.getClientSecret(ConnectionContext.getInstance().getConnection(), getClientId());
+          clientSecret = OAuthDbHelper.getClientSecret(CallContext.getInstance().getConnection(), getClientId());
         } catch (Throwable ex) {
           if (ex.getMessage().contains("DataSource 'java:/comp/env/" + DEFAULT_OAUTH_DATA_SOURCE_JNDI_NAME + "' not found")) {
-            ConnectionContext.getInstance().begin(getBackupDatasourceJndiName(), "OAuth");
-              clientSecret = OAuthDbHelper.getClientSecret(ConnectionContext.getInstance().getConnection(), getClientId());
+            CallContext.getInstance().begin(getBackupDatasourceJndiName(), "OAuth");
+              clientSecret = OAuthDbHelper.getClientSecret(CallContext.getInstance().getConnection(), getClientId());
           } else {
             throw ex;
           }
         } finally {
-          ConnectionContext.getInstance().end();
+          CallContext.getInstance().end();
         }
       }
       request.getSession().setAttribute(CLIENT_SECRET_PROPERTY, clientSecret);

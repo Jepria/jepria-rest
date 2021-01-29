@@ -3,7 +3,6 @@ package org.jepria.server.transaction;
 import org.apache.log4j.Logger;
 import org.jepria.server.transaction.annotation.After;
 import org.jepria.server.transaction.annotation.Before;
-import org.jepria.server.transaction.annotation.Transaction;
 import org.jepria.server.transaction.handler.EndTransactionHandler;
 import org.jepria.server.transaction.handler.EndTransactionHandlerImpl;
 import org.jepria.server.transaction.handler.StartTransactionHandler;
@@ -66,43 +65,38 @@ public class TransactionFactory {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
       Class<?> daoClass = dao.getClass();
-      if (dao.getClass().getDeclaredMethod(method.getName(), method.getParameterTypes()).isAnnotationPresent(Transaction.class)
-          || daoClass.isAnnotationPresent(Transaction.class)) {
-        Method implementingMethod = daoClass.getMethod(
-            method.getName(), method.getParameterTypes());
-        
-        Before before = implementingMethod.getAnnotation(Before.class);
-        Class<? extends StartTransactionHandler> startTransactionHandlerClass =
-            before != null ? before.startTransactionHandler() : StartTransactionHandlerImpl.class;
-        
-        After after = implementingMethod.getAnnotation(After.class);
-        Class<? extends EndTransactionHandler> endTransactionHandlerClass =
-            after != null ? after.endTransactionHandler() : EndTransactionHandlerImpl.class;
-        
-        startTransactionHandlerClass.newInstance().handle(dataSourceJndiName, moduleName);
-        Throwable caught = null;
-        Object result = null;
-        try {
-          final long startTime = System.currentTimeMillis();
-          result = method.invoke(dao, args);
-          logger.trace(dao.getClass() + "." + method.getName() + " execution time: " + (System.currentTimeMillis() - startTime) / 1000.00 + " (seconds)");
-        } catch (Exception exc) {
-          /*
-           * Необходимо вызвать getCause(), поскольку выброшенное из Dao исключение
-           * будет обёрнуто в InvocationTargetException.
-           */
-          caught = exc.getCause();
-        }
-        
-        endTransactionHandlerClass.newInstance().handle(caught);
-        
-        if (caught != null) {
-          throw caught;
-        }
-        return result;
-      } else {
-        return method.invoke(dao, args);
+      Method implementingMethod = daoClass.getMethod(
+          method.getName(), method.getParameterTypes());
+      
+      Before before = implementingMethod.getAnnotation(Before.class);
+      Class<? extends StartTransactionHandler> startTransactionHandlerClass =
+          before != null ? before.startTransactionHandler() : StartTransactionHandlerImpl.class;
+      
+      After after = implementingMethod.getAnnotation(After.class);
+      Class<? extends EndTransactionHandler> endTransactionHandlerClass =
+          after != null ? after.endTransactionHandler() : EndTransactionHandlerImpl.class;
+      
+      startTransactionHandlerClass.newInstance().handle(dataSourceJndiName, moduleName);
+      Throwable caught = null;
+      Object result = null;
+      try {
+        final long startTime = System.currentTimeMillis();
+        result = method.invoke(dao, args);
+        logger.trace(dao.getClass() + "." + method.getName() + " execution time: " + (System.currentTimeMillis() - startTime) / 1000.00 + " (seconds)");
+      } catch (Exception exc) {
+        /*
+         * Необходимо вызвать getCause(), поскольку выброшенное из Dao исключение
+         * будет обёрнуто в InvocationTargetException.
+         */
+        caught = exc.getCause();
       }
+      
+      endTransactionHandlerClass.newInstance().handle(caught);
+      
+      if (caught != null) {
+        throw caught;
+      }
+      return result;
     }
   }
   

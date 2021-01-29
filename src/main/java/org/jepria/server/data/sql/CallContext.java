@@ -12,7 +12,7 @@ import java.util.*;
  * Класс, реализующий получение соединения, управление транзакцией и освобождение ресурсов.<br/>
  * Объект соединения хранится в ходе выполнения в {@code ThreadLocal}.
  */
-public class ConnectionContext {
+public class CallContext {
   
   private static class ConnectionStackItem {
     private final Connection connection;
@@ -38,23 +38,22 @@ public class ConnectionContext {
     }
   }
   
+  protected static Logger logger = Logger.getLogger(CallContext.class.getName());
   
-  protected static Logger logger = Logger.getLogger(ConnectionContext.class.getName());
+  private CallContext() {}
   
-  private ConnectionContext() {}
-  
-  private static final ThreadLocal<ConnectionContext> threadLocal = new ThreadLocal<>();
+  private static final ThreadLocal<CallContext> threadLocal = new ThreadLocal<>();
   
   /**
    * Returns the thread local singleton instance
    */
-  public static ConnectionContext getInstance() {
-    ConnectionContext connectionContext = threadLocal.get();
+  public static CallContext getInstance() {
+    CallContext connectionContext = threadLocal.get();
     if (connectionContext == null) {
-      connectionContext = new ConnectionContext();
+      connectionContext = new CallContext();
       threadLocal.set(connectionContext);
     }
-    logger.debug(ConnectionContext.class + ".getInstance():" + connectionContext);
+    logger.debug(CallContext.class + ".getInstance():" + connectionContext);
     return connectionContext;
   }
   
@@ -68,7 +67,11 @@ public class ConnectionContext {
    * @param dataSourceJndiName JNDI-имя источника данных
    */
   public void begin(String dataSourceJndiName, String moduleName) {
-    logger.trace(ConnectionContext.class + ".beginTransaction(" + dataSourceJndiName + "," + moduleName + ")");
+    logger.trace(CallContext.class + ".beginTransaction(" + dataSourceJndiName + "," + moduleName + ")");
+    createConnection(dataSourceJndiName, moduleName);
+  }
+  
+  public void createConnection(String dataSourceJndiName, String moduleName) {
     Connection connection = pool.createConnection(dataSourceJndiName);
     logger.trace(Connection.class + ": new Connection(" + connection + ") for " + threadLocal.get());
     ConnectionStackItem item = new ConnectionStackItem(connection, dataSourceJndiName, moduleName);
@@ -117,12 +120,12 @@ public class ConnectionContext {
    * удаление контекста из {@code ThreadLocal}
    */
   public void end() {
-    ConnectionContext result = threadLocal.get();
-    threadLocal.set(null);
+    CallContext result = threadLocal.get();
+    threadLocal.remove();
     if (result == null) {
       return;
     }
-    statements.forEach(cs -> {
+    result.statements.forEach(cs -> {
       try {
         if (!cs.isClosed()) {
           cs.close();
@@ -143,11 +146,15 @@ public class ConnectionContext {
   }
   
   /**
-   * Выполняет закрытие (close) текущей транзакции.
+   * Выполняет закрытие (close) текущего соединения.
    * @throws SQLException в случае, если соединение выбросило исключение
    */
-  public void close() throws SQLException {
-    connections.pop().getConnection().close();
+  public void close() {
+    try {
+      connections.pop().getConnection().close();
+    } catch (SQLException exception) {
+      exception.printStackTrace();
+    }
   }
   
   /**

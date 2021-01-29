@@ -6,7 +6,7 @@ import org.jepria.compat.server.util.JepServerUtil;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
 import org.jepria.server.data.dao.DaoSupport;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -64,12 +64,12 @@ public class TextLargeObject extends LargeObject {
     int result = 0;
     try {
       // Очищаем значение поля
-      CallableStatement cs = ConnectionContext.getInstance().prepareCall(super.sqlClearLob);
-      DaoSupport.getInstance().setModule(ConnectionContext.getInstance().getModuleName(), "UploadCLOB");
+      CallableStatement cs = CallContext.getInstance().prepareCall(super.sqlClearLob);
+      DaoSupport.getInstance().setModule(CallContext.getInstance().getModuleName(), "UploadCLOB");
       cs.execute();
       
       // Получаем поток для записи поля СLOB
-      cs = ConnectionContext.getInstance().prepareCall(super.sqlObtainOutputStream);
+      cs = CallContext.getInstance().prepareCall(super.sqlObtainOutputStream);
       ResultSet rs = cs.executeQuery();
       if(rs.next()) {
         Clob clob = rs.getClob(1);
@@ -82,7 +82,7 @@ public class TextLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      ConnectionContext.getInstance().rollback();
+      CallContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin write error", ex);
     }
@@ -98,8 +98,8 @@ public class TextLargeObject extends LargeObject {
     int result = 0;
     try {
       // Получаем поток для записи поля СLOB
-      CallableStatement cs = ConnectionContext.getInstance().prepareCall(super.sqlObtainInputStream);
-      DaoSupport.getInstance().setModule(ConnectionContext.getInstance().getModuleName(), "DownloadCLOB");
+      CallableStatement cs = CallContext.getInstance().prepareCall(super.sqlObtainInputStream);
+      DaoSupport.getInstance().setModule(CallContext.getInstance().getModuleName(), "DownloadCLOB");
       ResultSet rs = cs.executeQuery();
       if(rs.next()) {
         Clob clob = (Clob) rs.getClob(1);
@@ -125,7 +125,7 @@ public class TextLargeObject extends LargeObject {
       }
       return result;
     } catch (SQLException ex) {
-      ConnectionContext.getInstance().rollback();
+      CallContext.getInstance().rollback();
       ex.printStackTrace();
       throw new ApplicationException("Large object begin read error", ex);
     }
@@ -188,7 +188,7 @@ public class TextLargeObject extends LargeObject {
   @Override
   protected void closeAll() {
     try {
-      ConnectionContext.getInstance().end();
+      CallContext.getInstance().end();
       reader.close();
       writer.close();
     } catch (IOException ex) {

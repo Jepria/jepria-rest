@@ -15,7 +15,7 @@ import org.jepria.compat.server.upload.clob.TextFileUploadImpl;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.util.JepRiaUtil;
 import org.jepria.server.data.RuntimeSQLException;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -46,7 +46,7 @@ public class DaoSupportOracle implements DaoSupport {
   public <T> T create(String query, Class<? super T> resultTypeClass, Object... params) {
     T result = null;
     
-    try (CallableStatement callableStatement = ConnectionContext.getInstance().prepareCall(query)) {
+    try (CallableStatement callableStatement = CallContext.getInstance().prepareCall(query)) {
       setInputParamsToStatement(callableStatement, 2, params);
       
       if (resultTypeClass.equals(Integer.class)) {
@@ -81,7 +81,7 @@ public class DaoSupportOracle implements DaoSupport {
   
   @Override
   public void execute(String query, Object... params) {
-    try (CallableStatement callableStatement = ConnectionContext.getInstance().prepareCall(query)) {
+    try (CallableStatement callableStatement = CallContext.getInstance().prepareCall(query)) {
       setInputParamsToStatement(callableStatement, 1, params);
       
       setApplicationInfo(query);
@@ -109,7 +109,7 @@ public class DaoSupportOracle implements DaoSupport {
   public <T> T executeAndReturn(String query, Class<? super T> resultTypeClass, Object... params) {
     T result = null;
     
-    try (CallableStatement callableStatement = ConnectionContext.getInstance().prepareCall(query)) {
+    try (CallableStatement callableStatement = CallContext.getInstance().prepareCall(query)) {
       
       setInputParamsToStatement(
           callableStatement,
@@ -391,7 +391,7 @@ public class DaoSupportOracle implements DaoSupport {
     
     ResultSet resultSet = null;
     
-    try (CallableStatement callableStatement = ConnectionContext.getInstance().prepareCall(query)) {
+    try (CallableStatement callableStatement = CallContext.getInstance().prepareCall(query)) {
       setApplicationInfo(query);
       resultSet = setParamsAndExecute(callableStatement, executionType, params);
       
@@ -571,14 +571,14 @@ public class DaoSupportOracle implements DaoSupport {
   /**
    * Установка информации о вызывающем модуле.
    * Использует встроенный функционал Oracle для установки трёх параметров сессии.
-   * Значение module_name (имя модуля) извлекается из {@link ConnectionContext}, action_name
+   * Значение module_name (имя модуля) извлекается из {@link CallContext}, action_name
    * (название действия) - из шаблона SQL-выражения. client_info заполняется пустым значением.
    *
    * @param queryToExecute шаблон запроса
    * @throws SQLException при ошибке взаимодействия с базой
    */
   private void setApplicationInfo(String queryToExecute) throws SQLException {
-    setModule(ConnectionContext.getInstance().getModuleName(), getAction(queryToExecute));
+    setModule(CallContext.getInstance().getModuleName(), getAction(queryToExecute));
   }
   
   /**
@@ -605,8 +605,8 @@ public class DaoSupportOracle implements DaoSupport {
             + "client_info => null "
             + ");"
             + " end;";
-    Connection connection = ConnectionContext.getInstance().getConnection();
-    CallableStatement callableStatement = ConnectionContext.getInstance().prepareCall(query);
+    Connection connection = CallContext.getInstance().getConnection();
+    CallableStatement callableStatement = CallContext.getInstance().prepareCall(query);
     setInputParamsToStatement(callableStatement, 1, moduleName, actionName);
     callableStatement.execute();
   }

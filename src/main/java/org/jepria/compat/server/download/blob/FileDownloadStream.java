@@ -4,13 +4,12 @@ import org.jepria.compat.server.download.FileDownload;
 import org.jepria.compat.server.exceptions.SpaceException;
 import org.jepria.compat.shared.exceptions.ApplicationException;
 import org.jepria.compat.shared.exceptions.SystemException;
-import org.jepria.server.data.sql.ConnectionContext;
+import org.jepria.server.data.sql.CallContext;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -132,7 +131,7 @@ public class FileDownloadStream extends InputStream {
       writeStream = new BufferedOutputStream(fileStream);
 
       if (transactionable) {
-        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -170,9 +169,9 @@ public class FileDownloadStream extends InputStream {
 
         if (transactionable) {
           if (fileDownload.isCancelled()) {
-            ConnectionContext.getInstance().rollback();
+            CallContext.getInstance().rollback();
           } else {
-            ConnectionContext.getInstance().commit();
+            CallContext.getInstance().commit();
           }
         }
 
@@ -180,7 +179,7 @@ public class FileDownloadStream extends InputStream {
         e.printStackTrace();
       } finally {
         if (transactionable) {
-          ConnectionContext.getInstance().end();
+          CallContext.getInstance().end();
         }
       }
     }
@@ -214,7 +213,7 @@ public class FileDownloadStream extends InputStream {
       writeStream = new BufferedOutputStream(fileStream);
 
       if (transactionable) {
-        ConnectionContext.getInstance().begin(dataSourceJndiName, moduleName);
+        CallContext.getInstance().begin(dataSourceJndiName, moduleName);
       }
 
       final int WRITE_LENGTH = fileDownload.beginRead(
@@ -252,9 +251,9 @@ public class FileDownloadStream extends InputStream {
 
         if (transactionable) {
           if (fileDownload.isCancelled()) {
-            ConnectionContext.getInstance().rollback();
+            CallContext.getInstance().rollback();
           } else {
-            ConnectionContext.getInstance().commit();
+            CallContext.getInstance().commit();
           }
         }
 
@@ -262,7 +261,7 @@ public class FileDownloadStream extends InputStream {
         e.printStackTrace();
       } finally {
         if (transactionable) {
-          ConnectionContext.getInstance().end();
+          CallContext.getInstance().end();
         }
       }
     }
