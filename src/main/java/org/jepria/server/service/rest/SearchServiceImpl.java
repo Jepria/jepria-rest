@@ -158,8 +158,9 @@ public class SearchServiceImpl implements SearchService {
     if (existingRequest != null && searchRequest != null && Objects.equals(existingRequest.getTemplateToken(), searchRequest.getTemplateToken())) {
       // resultset remains valid
 
-      // TODO do not test equality but test sublistness instead
-      if (!Objects.equals(existingRequest.getListSortConfig(), searchRequest.getListSortConfig())) {
+      // test whether the existing sort config equals the new
+      // important to test the order too (that's why simple equals does not work)
+      if (!equalsWithOrder(existingRequest.getListSortConfig(), searchRequest.getListSortConfig())) {
         invalidateSort();
       }
     } else {
@@ -171,6 +172,32 @@ public class SearchServiceImpl implements SearchService {
     sessionSearchRequest.set(searchRequest);
     
     return searchUID;
+  }
+
+  // TODO do not test equality but test sublistness instead
+  /**
+   * Checks the two <b>ordered</b> maps equality with entity order
+   * @param map1 may be null
+   * @param map2 may be null
+   * @return
+   */
+  protected static boolean equalsWithOrder(Map map1, Map map2) {
+    if (map1 == null && map2 == null) {
+      return true;
+    } else if (map1 == null || map2 == null) {
+      return false;
+    } else if (map1.size() != map2.size()) {
+      return false;
+    } else {
+      Iterator<Map.Entry> it1 = map1.entrySet().iterator();
+      Iterator<Map.Entry> it2 = map2.entrySet().iterator();
+      while (it1.hasNext() && it2.hasNext()) {
+        if (!it1.next().equals(it2.next())) {
+          return false;
+        }
+      }
+      return true;
+    }
   }
   
   /**
