@@ -147,30 +147,49 @@ public class SearchServiceImpl implements SearchService {
     }
     
   };
-  
+
+
   @Override
-  public String postSearchRequest(SearchRequest searchRequest, Credential credential) {
+  public SearchResult search(SearchRequest searchRequest, String cacheControl, Credential credential) {
 
     // В зависимости от существующих и новых поисковых параметров инвалидируем результирующий список и/или его сортировку
     final SearchRequest existingRequest = sessionSearchRequest.get();
-    
 
     if (existingRequest != null && searchRequest != null && Objects.equals(existingRequest.getTemplateToken(), searchRequest.getTemplateToken())) {
       // resultset remains valid
 
       // TODO do not test equality but test sublistness instead
-      if (!Objects.equals(existingRequest.getListSortConfig(), searchRequest.getListSortConfig())) {
+      if (!Objects.equals(existingRequest.listSortConfig, searchRequest.listSortConfig)) {
         invalidateSort();
       }
     } else {
       invalidateResultsetAndSort();
     }
 
+    if ("no-cache".equals(cacheControl)) {
+      invalidateResultsetAndSort();
+    }
+
 
     // сохраняем новые поисковые параметры
     sessionSearchRequest.set(searchRequest);
+
+
+    // осуществляем поиск
+    List<?> resultset = getResultsetLocal(credential);
+
+    SearchResult searchResult = new SearchResult(resultset.size(), resultset);
+    return searchResult;
+  }
+
+  @Override
+  public SearchResult search(int pageSize, int page, SearchRequest searchRequest, String cacheControl, Credential credential) {
+    SearchResult searchResult = search(searchRequest, cacheControl, credential);
     
-    return searchUID;
+    List<?> resultsetFragment = paging(searchResult.data, pageSize, page);
+
+    SearchResult searchResultPaged = new SearchResult(searchResult.resultsetSize, resultsetFragment);
+    return searchResultPaged;
   }
   
   /**
@@ -186,7 +205,7 @@ public class SearchServiceImpl implements SearchService {
     List<?> resultset;
 
     resultset = dao.find(
-            searchRequest.getTemplate(),
+            searchRequest.templateDto,
             credential == null ? null : credential.getOperatorId());
 
     if (resultset == null) {
@@ -208,7 +227,7 @@ public class SearchServiceImpl implements SearchService {
     }
     
     
-    Map<String, Integer> listSortConfig = searchRequest.getListSortConfig();
+    Map<String, Integer> listSortConfig = searchRequest.listSortConfig;
     if (listSortConfig != null) {
 
       final List<?> resultset = sessionResultset.get();
@@ -250,35 +269,12 @@ public class SearchServiceImpl implements SearchService {
         });
   }
   
-  
-  @Override
-  public SearchRequest getSearchRequest(String searchId, Credential credential) throws NoSuchElementException {
-    checkSearchIdOrElseThrow(searchId);
-
-    SearchRequest searchRequest = sessionSearchRequest.get();
-    if (searchRequest == null) {
-      throw new IllegalStateException("The session attribute must have already been set at this point");
-    }
-    
-    return searchRequest;
-  }
-  
-  @Override
-  public int getResultsetSize(String searchId, Credential credential) throws NoSuchElementException {
-    checkSearchIdOrElseThrow(searchId);
-
-    List<?> resultset = getResultsetLocal(credential, false); // no need to sort for getting size only
-
-    return resultset == null ? 0 : resultset.size();
-  }
-
   /**
    *
    * @param credential
-   * @param sort whether to return a resultset in "raw" order (as-is, without applying sort configuration from the search request), or with requested sort configuration applied
    * @return non-null, at least empty
    */
-  protected List<?> getResultsetLocal(Credential credential, boolean sort) {
+  protected List<?> getResultsetLocal(Credential credential) {
     
     // поиск (если необходимо)
     List<?> resultset = sessionResultset.get();
@@ -288,13 +284,11 @@ public class SearchServiceImpl implements SearchService {
     }
     
 
-    if (sort) {// сортировка (если необходимо)
+    // сортировка
+    boolean resultsetSortValid = sessionResultsetSortValid.get();
 
-      boolean resultsetSortValid = sessionResultsetSortValid.get();
-
-      if (!resultsetSortValid) {// сортировка не осуществлялась или была инвалидирована
-        doSort();
-      }
+    if (!resultsetSortValid) {// сортировка не осуществлялась или была инвалидирована
+      doSort();
     }
 
 
@@ -305,22 +299,6 @@ public class SearchServiceImpl implements SearchService {
     }
 
     return resultset;
-  }
-  
-  @Override
-  public List<?> getResultset(String searchId, Credential credential) throws NoSuchElementException {
-    checkSearchIdOrElseThrow(searchId);
-    
-    return getResultsetLocal(credential, true);
-  }
-  
-  @Override
-  public List<?> getResultsetPaged(String searchId, int pageSize, int page, Credential credential) throws NoSuchElementException {
-    checkSearchIdOrElseThrow(searchId);
-    
-    List<?> resultset = getResultsetLocal(credential, true);
-    
-    return paging(resultset, pageSize, page);
   }
   
   private static List<?> paging(List<?> resultset, int pageSize, int page) {
@@ -344,13 +322,6 @@ public class SearchServiceImpl implements SearchService {
     } else {
       return null;
     }
-  }
-
-  @Override
-  public void invalidateResultset(String searchId) throws NoSuchElementException {
-    checkSearchIdOrElseThrow(searchId);
-
-    invalidateResultsetAndSort();
   }
 
   /**

@@ -1,37 +1,27 @@
 package org.jepria.server.service.rest;
 
+import com.google.gson.Gson;
 import org.jepria.server.service.security.Credential;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * Сервис поиска объектов сущности
- * <br/>
- * <i>В устаревшей терминологии: контроллер поиска, ResourceSearchController</i>
- * <br/>
- * Интерфейс предусматривает только методы создания и чтения (create/POST, read/GET).
- * Методы модификации и удаления (update/PUT, delete/DELETE &mdash; стратегия обновления, переиспользования и очистки созданных объектов) 
- * определяются конкретной реализацией
  */
 public interface SearchService {
 
   /**
+   * Объект (совокупность его полей) однозначно идентифицирует поиск.
    * Интерфейс клиентского поискового запроса для использования внутри сервиса (internal representation)
    */
-  interface SearchRequest {
+  class SearchRequest implements Serializable { // TODO why Serializable?
 
     /**
-     * @return оригинальный поисковый шаблон
+     * оригинальный поисковый шаблон
      */
-    Object getTemplate();
-
-    /**
-     * @return поисковый шаблон в виде строкового токена, используемый для сравнения двух шаблонов на equals (сравнение оригинальных объектов может быть ненадёжным)
-     */
-    String getTemplateToken();
-
+    public final Object templateDto;
     /**
      * @return <b>упорядоченный</b> map.
      * <br/>
@@ -40,53 +30,52 @@ public interface SearchService {
      * значение: порядок сортировки записей списка по данному столбцу (неотрицательное: по возрастанию, отрицательное: по убыванию)
      * <br/>
      */
-    Map<String, Integer> getListSortConfig();
+    public final Map<String, Integer> listSortConfig;
+
+    private final String templateToken;
+    /**
+     * @return поисковый шаблон в виде строкового токена, используемый для сравнения двух шаблонов на equals (сравнение оригинальных объектов может быть ненадёжным)
+     */
+    public String getTemplateToken() {
+      return templateToken;
+    }
+    
+    public SearchRequest(Object templateDto, Map<String, Integer> listSortConfig) {
+      this.templateDto = templateDto;
+      this.listSortConfig = listSortConfig;
+
+      // для преобразования в токен используется не общий контексно-зависимый сериализатор, а просто _некий_ сериализатор
+      this.templateToken = templateDto == null ? null : new Gson().toJson(templateDto);
+    }
+  }
+  
+  class SearchResult implements Serializable { // TODO why Serializable?
+    public final int resultsetSize; 
+    public List<?> data;
+
+    public SearchResult(int resultsetSize, List<?> data) {
+      this.resultsetSize = resultsetSize;
+      this.data = data;
+    }
   }
   
   /**
    * 
    * @param searchRequest
-   * @return non-null
-   */
-  String postSearchRequest(SearchRequest searchRequest, Credential credential);
-  /**
-   * 
-   * @param searchId
-   * @return non-null
-   * @throws NoSuchElementException if the requested searchId does not exist 
-   */
-  SearchRequest getSearchRequest(String searchId, Credential credential) throws NoSuchElementException;
-
-  /**
-   * 
-   * @param searchId
-   * @param pageSize
-   * @param page
-   * @return
-   * @throws NoSuchElementException if the requested searchId does not exist
-   */
-  List<?> getResultsetPaged(String searchId, int pageSize, int page, Credential credential) throws NoSuchElementException;
-
-  /**
-   * 
-   * @param searchId
+   * @param cacheControl
    * @param credential
    * @return
-   * @throws NoSuchElementException if the requested searchId does not exist
    */
-  List<?> getResultset(String searchId, Credential credential) throws NoSuchElementException;
+  SearchResult search(SearchRequest searchRequest, String cacheControl, Credential credential);
 
   /**
-   * @param searchId
+   *
+   * @param pageSize
+   * @param page
+   * @param searchRequest
+   * @param cacheControl
+   * @param credential
    * @return
-   * @throws NoSuchElementException if the requested searchId does not exist
    */
-  int getResultsetSize(String searchId, Credential credential) throws NoSuchElementException;
-
-  /**
-   * Invalidates resultset (if any) by the searchId
-   * @param searchId
-   * @throws NoSuchElementException if the requested searchId does not exist
-   */
-  void invalidateResultset(String searchId) throws NoSuchElementException;
+  SearchResult search(int pageSize, int page, SearchRequest searchRequest, String cacheControl, Credential credential);
 }
