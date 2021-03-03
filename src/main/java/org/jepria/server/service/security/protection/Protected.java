@@ -13,4 +13,5 @@ public @interface Protected {
   String HTTP_BASIC_PASSWORD = "password";
   String HTTP_BASIC_PASSWORD_HASH = "passwordHash";
   String httpBasicPasswordType();
+  boolean showOAuthLoginPage() default false;
 }
