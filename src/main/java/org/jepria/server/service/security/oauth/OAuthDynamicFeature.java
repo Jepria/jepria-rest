@@ -7,6 +7,7 @@ import org.jepria.oauth.sdk.jaxrs.OAuthContainerRequestFilter;
 import org.jepria.server.data.RuntimeSQLException;
 import org.jepria.server.env.EnvironmentPropertySupport;
 import org.jepria.server.service.security.SecurityContext;
+import org.jepria.server.service.security.protection.Protected;
 
 import javax.annotation.Priority;
 import javax.servlet.http.Cookie;
@@ -26,40 +27,58 @@ import java.sql.SQLException;
 
 import static org.jepria.compat.server.JepRiaServerConstant.*;
 import static org.jepria.oauth.sdk.OAuthConstants.*;
-//TODO убрать дублирования кода
-public class OAuthEntryDynamicFeature implements DynamicFeature {
+import static org.jepria.oauth.sdk.OAuthConstants.OAUTH_AUTHORIZATION_CONTEXT_PATH;
+
+public class OAuthDynamicFeature implements DynamicFeature {
+  
+  
+  private final HttpServletRequest request;
+  private final HttpServletResponse response;
+  private final UriInfo uriInfo;
+  
+  public OAuthDynamicFeature(@Context HttpServletRequest request,
+                                @Context HttpServletResponse response,
+                                @Context UriInfo uriInfo) {
+    this.request = request;
+    this.response = response;
+    this.uriInfo = uriInfo;
+  }
+  
   @Override
   public void configure(ResourceInfo resourceInfo, FeatureContext context) {
     
     final AnnotatedMethod am = new AnnotatedMethod(resourceInfo.getResourceMethod());
     // HttpBasic annotation on the method
-    OAuthEntryPoint resourceAnnotation = resourceInfo.getResourceClass().getAnnotation(OAuthEntryPoint.class);
-    OAuthEntryPoint methodAnnotation = am.getAnnotation(OAuthEntryPoint.class);
+    OAuth resourceAnnotation = resourceInfo.getResourceClass().getAnnotation(OAuth.class);
+    OAuth methodAnnotation = am.getAnnotation(OAuth.class);
     if (methodAnnotation != null) {
-      context.register(OAuthEntryContainerRequestFilter.class);
+      context.register(new OAuthContainerRequestFilterImpl(request, response, uriInfo, methodAnnotation.showLoginPage()));
       return;
     } else if (resourceAnnotation != null) {
-      context.register(OAuthEntryContainerRequestFilter.class);
+      context.register(new OAuthContainerRequestFilterImpl(request, response, uriInfo, resourceAnnotation.showLoginPage()));
       return;
     }
   }
   
   @Priority(Priorities.AUTHENTICATION)
-  public static class OAuthEntryContainerRequestFilter extends OAuthContainerRequestFilter {
+  public static class OAuthContainerRequestFilterImpl extends OAuthContainerRequestFilter {
     
     public static final String AUTHENTICATION_SCHEME = "BEARER";
     private final HttpServletRequest request;
     private final HttpServletResponse response;
     private final UriInfo uriInfo;
+    private final boolean showLoginPage;
     
-    public OAuthEntryContainerRequestFilter(@Context HttpServletRequest request,
-                                            @Context HttpServletResponse response,
-                                            @Context UriInfo uriInfo) {
+    public OAuthContainerRequestFilterImpl(@Context HttpServletRequest request,
+                                           @Context HttpServletResponse response,
+                                           @Context UriInfo uriInfo,
+                                           boolean showLoginPage) {
       this.request = request;
       this.response = response;
       this.uriInfo = uriInfo;
+      this.showLoginPage = showLoginPage;
     }
-  
+    
     @Override
     protected String getTokenFromCookie() {
       String tokenString = null;
@@ -78,7 +97,7 @@ public class OAuthEntryDynamicFeature implements DynamicFeature {
       }
       return tokenString;
     }
-  
+    
     private TokenInfoResponse getTokenInfo(String tokenString) throws IOException {
       TokenInfoRequest tokenInfoRequest = TokenInfoRequest.Builder()
           .resourceURI(URI.create(getRequest().getRequestURL().toString().replaceFirst(getRequest().getRequestURI(), OAUTH_TOKENINFO_CONTEXT_PATH)))
@@ -107,7 +126,7 @@ public class OAuthEntryDynamicFeature implements DynamicFeature {
         stateCookie.setPath(request.getContextPath());
         stateCookie.setHttpOnly(true);
         httpServletResponse.addCookie(stateCookie);
-      
+        
         String authorizationRequestURI = AuthorizationRequest.Builder()
             .resourceURI(URI.create(request.getRequestURL().toString().replaceFirst(request.getRequestURI(), OAUTH_AUTHORIZATION_CONTEXT_PATH)))
             .responseType(ResponseType.CODE)
@@ -122,7 +141,8 @@ public class OAuthEntryDynamicFeature implements DynamicFeature {
         e.printStackTrace();
       }
     }
-  
+    
+    
     @Override
     protected SecurityContext getSecurityContext(TokenInfoResponse tokenInfo) {
       String[] credentials = tokenInfo.getSub().split(":");
@@ -202,24 +222,28 @@ public class OAuthEntryDynamicFeature implements DynamicFeature {
     
     @Override
     public void filter(ContainerRequestContext containerRequestContext) throws IOException {
-      /*
-       * Get token from Authorization Header
-       */
-      String tokenString = getTokenFromHeader();
-      if (tokenString != null) {
-        super.filter(containerRequestContext);
-      } else {
-        tokenString = getTokenFromCookie();
-        if (tokenString == null) {
-          authorizationRequest(response, containerRequestContext);
+      if (showLoginPage) {
+        /*
+         * Get token from Authorization Header
+         */
+        String tokenString = getTokenFromHeader();
+        if (tokenString != null) {
+          super.filter(containerRequestContext);
         } else {
-          TokenInfoResponse tokenInfoResponse = getTokenInfo(tokenString);
-          if (!tokenInfoResponse.getActive()) {
+          tokenString = getTokenFromCookie();
+          if (tokenString == null) {
             authorizationRequest(response, containerRequestContext);
           } else {
-            containerRequestContext.setSecurityContext(getSecurityContext(tokenInfoResponse));
+            TokenInfoResponse tokenInfoResponse = getTokenInfo(tokenString);
+            if (!tokenInfoResponse.getActive()) {
+              authorizationRequest(response, containerRequestContext);
+            } else {
+              containerRequestContext.setSecurityContext(getSecurityContext(tokenInfoResponse));
+            }
           }
         }
+      } else {
+        super.filter(containerRequestContext);
       }
     }
   }
