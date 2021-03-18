@@ -3,6 +3,7 @@ package org.jepria.server.service.rest;
 import com.google.gson.Gson;
 import org.jepria.server.data.ColumnSortConfigurationDto;
 import org.jepria.server.data.SearchRequestDto;
+import org.jepria.server.data.SearchResultDto;
 import org.jepria.server.service.security.JepSecurityContext;
 
 import javax.servlet.http.HttpServletRequest;
@@ -82,12 +83,13 @@ public class JaxrsAdapterBase {
 
   /**
    * Adapter for endpoint methods related to search operations
+   * in old POST+GET fashion
    */
-  public class SearchEndpointAdapter {
+  public class PostGetSearchEndpointAdapter {
 
-    protected final Supplier<SearchService> searchService;
+    protected final Supplier<PostGetSearchService> searchService;
 
-    public SearchEndpointAdapter(Supplier<SearchService> searchService) {
+    public PostGetSearchEndpointAdapter(Supplier<PostGetSearchService> searchService) {
       this.searchService = searchService;
     }
 
@@ -109,7 +111,7 @@ public class JaxrsAdapterBase {
      */
     public <T> Response postSearch(SearchRequestDto<T> searchRequestDto, String extendedResponse, String cacheControl) {
 
-      final SearchService.SearchRequest searchRequest = convertSearchRequest(searchRequestDto);
+      final PostGetSearchService.SearchRequest searchRequest = convertSearchRequest(searchRequestDto);
 
       final String searchId = searchService.get().postSearchRequest(searchRequest, securityContext.getCredential());
 
@@ -127,7 +129,7 @@ public class JaxrsAdapterBase {
       return response;
     }
 
-    protected class SearchRequestImpl implements SearchService.SearchRequest, Serializable {
+    protected class SearchRequestImpl implements PostGetSearchService.SearchRequest, Serializable {
 
       protected final Object templateDto;
       protected final String templateToken;
@@ -163,7 +165,7 @@ public class JaxrsAdapterBase {
      * @param searchRequestDto
      * @return null for null
      */
-    protected SearchService.SearchRequest convertSearchRequest(SearchRequestDto<?> searchRequestDto) {
+    protected PostGetSearchService.SearchRequest convertSearchRequest(SearchRequestDto<?> searchRequestDto) {
       if (searchRequestDto == null) {
         return null;
       }
@@ -179,7 +181,7 @@ public class JaxrsAdapterBase {
      * @param searchRequest
      * @return null for null
      */
-    protected SearchRequestDto<?> convertSearchRequest(SearchService.SearchRequest searchRequest) {
+    protected SearchRequestDto<?> convertSearchRequest(PostGetSearchService.SearchRequest searchRequest) {
       if (searchRequest == null) {
         return null;
       }
@@ -287,7 +289,7 @@ public class JaxrsAdapterBase {
 
     public SearchRequestDto<?> getSearchRequest(
             String searchId) {
-      final SearchService.SearchRequest searchRequest;
+      final PostGetSearchService.SearchRequest searchRequest;
 
       try {
         searchRequest = searchService.get().getSearchRequest(searchId, securityContext.getCredential());
@@ -349,7 +351,7 @@ public class JaxrsAdapterBase {
     }
 
     public int getSearchResultsetSize(String searchId, String cacheControl) {
-      
+
       final int result;
 
       try {
@@ -441,7 +443,7 @@ public class JaxrsAdapterBase {
       // normalize paging parameters
       pageSize = pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
       page = page == null ? 1 : page;
-      
+
       final List<?> records;
 
       try {
@@ -459,6 +461,76 @@ public class JaxrsAdapterBase {
 
         return records;
       }
+    }
+  }
+  
+  /**
+   * Adapter for endpoint methods related to search operations
+   */
+  public class SearchEndpointAdapter {
+
+    protected final Supplier<SearchService> searchService;
+
+    public SearchEndpointAdapter(Supplier<SearchService> searchService) {
+      this.searchService = searchService;
+    }
+
+    /**
+     * @param pageSize          may be null
+     * @param page              may be null
+     * @param sortConfiguration
+     * @param templateDto
+     * @param cacheControl
+     * @return
+     */
+    public <T> SearchResultDto<T> search(Integer pageSize,
+                                  Integer page,
+                                  List<ColumnSortConfigurationDto> sortConfiguration,
+                                  Object templateDto,
+                                  String cacheControl) {
+
+      // Convert Dtos (for transferring) to a SearchRequest (internal representation)
+      final SearchService.SearchRequest searchRequest;
+      {
+        final Map<String, Integer> sortConfig = convertListSortConfig(sortConfiguration);
+        searchRequest = new SearchService.SearchRequest(templateDto, sortConfig);
+      }
+
+      final SearchService.SearchResult result;
+
+      if (pageSize != null && page != null) {
+        result = searchService.get().search(pageSize, page, searchRequest, cacheControl, securityContext.getCredential());
+
+      } else if (pageSize == null && page == null) {
+        result = searchService.get().search(searchRequest, cacheControl, securityContext.getCredential());
+
+      } else {
+        final String message = "Either 'pageSize' and 'page' query params are both empty (for getting whole resultset), "
+                + "or both non-empty (for getting resultset paged)";
+        throw new BadRequestException(message);
+      }
+      
+      SearchResultDto<T> searchResultDto = new SearchResultDto<>();
+      searchResultDto.setResultsetSize(result.resultsetSize);
+      searchResultDto.setData((List<T>)result.data);
+
+      return searchResultDto;
+    }
+
+    /**
+     * @param listSortConfig
+     * @return <b>ordered</b> map, modifiable collection, null for null is important
+     */
+    protected Map<String, Integer> convertListSortConfig(List<ColumnSortConfigurationDto> listSortConfig) {
+      if (listSortConfig == null) {
+        return null;
+      }
+
+      final LinkedHashMap<String, Integer> ret = new LinkedHashMap<>();
+      for (ColumnSortConfigurationDto colSortConfig : listSortConfig) {
+        ret.put(colSortConfig.getColumnName(), "desc".equals(colSortConfig.getSortOrder()) ? -1 : 1);
+      }
+      return ret;
     }
   }
 }
