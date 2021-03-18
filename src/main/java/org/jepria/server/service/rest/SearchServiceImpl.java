@@ -160,7 +160,7 @@ public class SearchServiceImpl implements SearchService {
 
       // test whether the existing sort config equals the new
       // important to test the order too (that's why simple equals does not work)
-      if (!equalsWithOrder(existingRequest.getListSortConfig(), searchRequest.getListSortConfig())) {
+      if (!equalsWithOrder(existingRequest.listSortConfig, searchRequest.listSortConfig)) {
         invalidateSort();
       }
     } else {
