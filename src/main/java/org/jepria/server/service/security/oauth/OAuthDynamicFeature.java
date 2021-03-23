@@ -7,7 +7,6 @@ import org.jepria.oauth.sdk.jaxrs.OAuthContainerRequestFilter;
 import org.jepria.server.data.RuntimeSQLException;
 import org.jepria.server.env.EnvironmentPropertySupport;
 import org.jepria.server.service.security.SecurityContext;
-import org.jepria.server.service.security.protection.Protected;
 
 import javax.annotation.Priority;
 import javax.servlet.http.Cookie;
@@ -27,7 +26,7 @@ import java.sql.SQLException;
 
 import static org.jepria.compat.server.JepRiaServerConstant.*;
 import static org.jepria.oauth.sdk.OAuthConstants.*;
-import static org.jepria.oauth.sdk.OAuthConstants.OAUTH_AUTHORIZATION_CONTEXT_PATH;
+import static org.jepria.server.service.security.servlet.oauth.OAuthRequestWrapper.OAUTH_TOKEN;
 
 public class OAuthDynamicFeature implements DynamicFeature {
   
@@ -69,9 +68,9 @@ public class OAuthDynamicFeature implements DynamicFeature {
     private final UriInfo uriInfo;
     private final boolean showLoginPage;
     
-    public OAuthContainerRequestFilterImpl(@Context HttpServletRequest request,
-                                           @Context HttpServletResponse response,
-                                           @Context UriInfo uriInfo,
+    public OAuthContainerRequestFilterImpl(HttpServletRequest request,
+                                           HttpServletResponse response,
+                                           UriInfo uriInfo,
                                            boolean showLoginPage) {
       this.request = request;
       this.response = response;
@@ -81,19 +80,27 @@ public class OAuthDynamicFeature implements DynamicFeature {
     
     @Override
     protected String getTokenFromCookie() {
+      if (!showLoginPage) {
+        /*
+         * consider not to lookup token in cookies or session,
+         * if showLoginPage is false, because inconsistent usage may cause
+         * CSRF problems
+         */
+        return null;
+      }
       String tokenString = null;
       Cookie[] cookies = request.getCookies();
       if (cookies == null) {
         return null;
       }
       for (Cookie cookie : cookies) {
-        if (cookie.getName().equalsIgnoreCase("OAUTH_TOKEN")) {
+        if (cookie.getName().equalsIgnoreCase(OAUTH_TOKEN)) {
           tokenString = cookie.getValue();
           break;
         }
       }
-      if (request.getSession().getAttribute("OAUTH_TOKEN") != null) {
-        tokenString = (String) request.getSession().getAttribute("OAUTH_TOKEN");
+      if (request.getSession().getAttribute(OAUTH_TOKEN) != null) {
+        tokenString = (String) request.getSession().getAttribute(OAUTH_TOKEN);
       }
       return tokenString;
     }
@@ -145,8 +152,14 @@ public class OAuthDynamicFeature implements DynamicFeature {
     
     @Override
     protected SecurityContext getSecurityContext(TokenInfoResponse tokenInfo) {
-      String[] credentials = tokenInfo.getSub().split(":");
-      return new SecurityContext(request, credentials[0], Integer.valueOf(credentials[1])) {
+      String subject = tokenInfo.getSub();
+      String username = tokenInfo.getUsername();
+      if (subject.contains(":")) {
+        String[] credentials = tokenInfo.getSub().split(":");
+        username = credentials[0];
+        subject = credentials[1];
+      }
+      return new SecurityContext(request, username, Integer.valueOf(subject)) {
         
         @Override
         public String getAuthenticationScheme() {
