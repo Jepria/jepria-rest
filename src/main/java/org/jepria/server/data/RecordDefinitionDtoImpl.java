@@ -9,9 +9,9 @@ import java.util.*;
 // TODO реализовать аннотацию прикладных Dto-классов вместо явного создания прикладного (? extends RecordDefinitionDtoImpl) с явной передачей параметров-классов
 public class RecordDefinitionDtoImpl implements RecordDefinition {
 
-  // unmodifiable collection
+  // unmodifiable collection, snake_case
   protected final Set<String> primaryKey;
-  // unmodifiable collection
+  // unmodifiable collection, keys in snake_case
   // TODO пока что эта коллекция содержит только поля, являющиеся первичными ключами, а должна по идее содержать все поля всех ДТОв. Мешает это сделать то обстоятельство, что потенциально в разных Dto-классах могут встретиться поля с одинаковым именем, но с разными типами.
   protected final Map<String, Class<?>> fieldMap;
 
@@ -89,8 +89,8 @@ public class RecordDefinitionDtoImpl implements RecordDefinition {
   }
 
   @Override
-  public Class<?> getFieldType(String fieldName) {
-    return fieldMap.get(fieldName);
+  public Class<?> getFieldType(String field_name) {
+    return fieldMap.get(field_name);
   }
 
 }

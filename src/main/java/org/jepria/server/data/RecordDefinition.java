@@ -9,32 +9,34 @@ import java.util.*;
 public interface RecordDefinition {
   /**
    * Полный набор имён полей, которые может содержать запись
+   * 
+   * @return items in snake_case
    */
   // TODO this can be determined from the Dto annotations
   // TODO объяснить в комментарии, какие поля нужно возвращать (все возможные или часть?)
   Set<String> getFieldNames();
   
   /**
-   * @return первичный ключ записи (простой или составной), non-null
+   * @return первичный ключ записи (простой или составной), non-null, items in snake_case
    */
   // TODO this can be determined from the Dto annotations
   List<String> getPrimaryKey();
 
   /**
    * Определяет тип поля записи
-   * @param fieldName
+   * @param field_name in snake_case
    * @return
    */
   // TODO Class or Type?
   // TODO this can be determined from the Dto annotations
-  Class<?> getFieldType(String fieldName);
+  Class<?> getFieldType(String field_name);
 
   /**
    * Определяет способ сравнения значений определённого поля записи
-   * @param fieldName
+   * @param field_name in snake_case
    * @return custom field comparator or {@code null} to use default comparator
    */
-  default Comparator<Object> getFieldComparator(String fieldName) {
+  default Comparator<Object> getFieldComparator(String field_name) {
     return null;
   }
   
