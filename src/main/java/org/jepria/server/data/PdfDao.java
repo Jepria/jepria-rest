@@ -61,7 +61,7 @@ public class PdfDao {
       parameters.put("REPORT_LOCALE", locale);
     }
 
-    JRSwapFile swapFile = new JRSwapFile("C:\\apache_tomcat_8.5.46\\work\\Catalina\\localhost\\ApplicationRejectTracking", 1024, 1024);
+    JRSwapFile swapFile = new JRSwapFile(System.getProperty("java.io.tmpdir"), 1024, 1024);
     JRAbstractLRUVirtualizer virtualizer = new JRSwapFileVirtualizer(2, swapFile, true);
     parameters.put("REPORT_VIRTUALIZER", virtualizer);
 
