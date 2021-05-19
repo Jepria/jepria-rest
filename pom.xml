@@ -19,7 +19,7 @@
     <maven.dependency.plugin.version>2.8</maven.dependency.plugin.version>
 
     <jersey.server.version>2.31</jersey.server.version>
-    <jersey.common.version>2.31</jersey.common.version>
+    <jersey.common.version>2.34</jersey.common.version>
     <jakarta.ws.rs.version>2.1.6</jakarta.ws.rs.version>
     <jakarta.json.version>1.0.2</jakarta.json.version>
     <hk2.api.version>2.6.1</hk2.api.version>
