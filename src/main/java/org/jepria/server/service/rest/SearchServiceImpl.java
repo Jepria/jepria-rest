@@ -255,7 +255,7 @@ public class SearchServiceImpl implements SearchService {
     
     
     Map<String, Integer> listSortConfig = searchRequest.listSortConfig;
-    if (listSortConfig != null) {
+    if (listSortConfig != null && !listSortConfig.isEmpty()) {
 
       final List<?> resultset = sessionResultset.get();
 
