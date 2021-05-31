@@ -1,23 +1,17 @@
 package org.jepria.server.data;
 
 import net.sf.jasperreports.engine.*;
-import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 import net.sf.jasperreports.engine.fill.*;
-import net.sf.jasperreports.engine.type.PrintOrderEnum;
 import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
 import net.sf.jasperreports.engine.util.JRSwapFile;
-import net.sf.jasperreports.engine.xml.JRXmlLoader;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Creates and prints PDF files 
@@ -34,17 +28,18 @@ public class PdfDao {
   public static void print(InputStream jasperReportInputStream, Map<String, Object> parameters, List<?> records, OutputStream out) {
     print(jasperReportInputStream, parameters, records, null, out, true);
   }
-  
+
   /**
    * Create and print a jasperreport PDF file
    * @param jasperReportInputStream {@code .jasper} compiled report resource stream
    * @param parameters data to fill the report with
    * @param records data to fill the report with
-   * @param locale 
+   * @param locale
    * @param out stream to print the resultant PDF to
    * @param isBuffered
    */
   public static void print(InputStream jasperReportInputStream, Map<String, Object> parameters, List<?> records, Locale locale, OutputStream out, boolean isBuffered) {
+    
     JasperPrint jasperPrint = prepareJasperPrint(jasperReportInputStream, parameters, records, locale);
     try {
       print(jasperPrint, out, isBuffered);
@@ -54,8 +49,7 @@ public class PdfDao {
   }
 
   protected static JasperPrint prepareJasperPrint(InputStream jasperReportInputStream, Map<String, Object> parameters, List<?> records, Locale locale) {
-    JepReportRecords reportRecords = new JepReportRecords(records);
-    JRDataSource jrDataSource = new JepReportDataSource(reportRecords);
+    JRDataSource jrDataSource = new JRDataSourceImpl(records.iterator());
 
     if (locale != null) {
       parameters.put("REPORT_LOCALE", locale);
@@ -74,7 +68,7 @@ public class PdfDao {
 
     removeBlankPage(jasperPrint.getPages());
     virtualizer.setReadOnly(true);
-    
+
     return jasperPrint;
   }
 
@@ -178,233 +172,67 @@ public class PdfDao {
 
   }
 
-  /**
-   * Semi-legacy class, imported from {@code com.technology.jep.jepriareport.server.JepReportDataSource} as a quick migration,
-   * TODO needs refactoring or rewriting
-   */
-  protected static class JepReportDataSource implements JRDataSource {
-    private static final int DEFAULT_MODE = 0;
-    protected JepReportRecords recordList;
-    private static final int OUT_OF_MEMORY_TEST_MODE = 1;
-    private static final int mode = 0;
-    private static final int MAX_ROW_NUMBER_TEST_MODE = 100000;
-    private int currentRowNumber;
+  protected static class JRDataSourceImpl implements JRDataSource {
 
-    public JepReportDataSource(JepReportRecords records) {
-      this.recordList = null;
-      this.currentRowNumber = 0;
-      this.recordList = records;
-      this.recordList.beforeFirst();
+    protected final Iterator<?> it;
+
+    /**
+     * @param recordsIterator nullable, null means empty iterator
+     */
+    public JRDataSourceImpl(Iterator<?> recordsIterator) {
+      if (recordsIterator == null) {
+        this.it = Collections.emptyIterator();
+      } else {
+        this.it = recordsIterator;
+      }
     }
 
-    public JepReportDataSource(JepReportRecords records, String reportDesignPath) throws JRException {
-      this(records);
-      JasperDesign jasperDesign = JRXmlLoader.load(reportDesignPath);
-      int columnNumber = jasperDesign.getColumnCount();
-      if (columnNumber > 1) {
-        if (jasperDesign.getPrintOrderValue() == PrintOrderEnum.VERTICAL) {
-          records.setPrintOrder(JepReportRecords.PrintOrder.HORIZONTAL);
-          jasperDesign.setPrintOrder(PrintOrderEnum.VERTICAL);
-          JasperCompileManager.compileReportToFile(jasperDesign, reportDesignPath.replaceAll("jrxml", "jasper"));
-        } else {
-          records.setPrintOrder(JepReportRecords.PrintOrder.VERTICAL);
+    protected Object currentRecord;
+
+    /**
+     * Lazy-initialized class which the iterated records are of. 
+     */
+    protected Class<?> dtoClass;
+
+    @Override
+    public boolean next() throws JRException {
+      if (it.hasNext()) {
+        currentRecord = it.next();
+
+        { // lazy-initialize the dto class
+          if (dtoClass == null) {
+            dtoClass = currentRecord.getClass();
+          }
         }
 
-        records.setColumnNumber(columnNumber);
-      }
-
-    }
-
-    public JepReportDataSource(List<Object> recordList, String reportDesignPath) throws JRException {
-      this(new JepReportRecords(recordList), reportDesignPath);
-    }
-
-    public boolean next() throws JRException {
-      boolean result = false;
-      switch(0) {
-        case 1:
-          if (this.currentRowNumber++ < 100000) {
-            this.recordList.first();
-            result = true;
-            if (this.currentRowNumber % 1000 == 0) {
-              System.out.println("Получено " + this.currentRowNumber + " записей");
-            }
-          }
-          break;
-        default:
-          if (this.recordList.hasNext()) {
-            this.recordList.next();
-            result = true;
-          }
-      }
-
-      return result;
-    }
-
-    public Object getFieldValue(JRField field) throws JRException {
-      String fieldName = field.getName();
-      return this.recordList.getCurrentValue(fieldName);
-    }
-
-    public boolean beforeFirst() throws JRException {
-      this.recordList.beforeFirst();
-      return true;
-    }
-  }
-
-  /**
-   * Semi-legacy class, imported from {@code com.technology.jep.jepriareport.server.JepReportRecords} as a quick migration,
-   * TODO needs refactoring or rewriting
-   */
-  protected static class JepReportRecords {
-    protected List<?> records;
-    private int firstIndex = -1;
-    private int lastIndex = -1;
-    private int rangeSize = 0;
-    private int range = 0;
-    private int rowNumber = -1;
-    private int currentIndex = -1;
-    private int columnNumber = 1;
-    private PrintOrder printOrder;
-    private int columnSize;
-    private final Class<?> dtoClass;
-
-    public JepReportRecords(List<?> recordList) {
-      this.printOrder = PrintOrder.VERTICAL;
-      this.columnSize = -1;
-      this.setRecords(recordList);
-      
-      if (recordList == null || recordList.isEmpty()) {
-        throw new IllegalArgumentException();
+        return true;
       } else {
-        this.dtoClass = recordList.iterator().next().getClass();
+        return false;
       }
     }
 
-    public Object getCurrentRecord() {
-      return this.records.get(this.currentIndex);
-    }
+    @Override
+    public Object getFieldValue(JRField jrField) throws JRException {
 
-    public void beforeFirst() {
-      this.rowNumber = this.currentIndex = this.records.size() > 0 ? this.firstOffset() - 1 : -1;
-    }
+      String fieldName = jrField.getName();
 
-    public Object first() {
-      this.rowNumber = this.currentIndex = this.firstOffset();
-      return this.getCurrentRecord();
-    }
-
-    public Object last() {
-      this.rowNumber = this.currentIndex = this.lastOffset();
-      return this.getCurrentRecord();
-    }
-
-    public void afterLast() {
-      this.rowNumber = this.currentIndex = this.records.size() > 0 ? this.lastOffset() + 1 : -1;
-    }
-
-    public Object next() {
-      ++this.rowNumber;
-      this.setCurrentIndexByRowNumber();
-      return this.getCurrentRecord();
-    }
-
-    public Object previous() {
-      --this.rowNumber;
-      this.setCurrentIndexByRowNumber();
-      return this.getCurrentRecord();
-    }
-
-    public int getRangeSize() {
-      return this.rangeSize;
-    }
-
-    public void setRangeSize(int rangeSize) {
-      this.rangeSize = rangeSize;
-    }
-
-    protected int firstOffset() {
-      return this.rangeSize > 0 ? this.firstIndex + this.rangeSize * this.range : this.firstIndex;
-    }
-
-    protected int lastOffset() {
-      return this.rangeSize > 0 && this.rangeSize * this.range + this.rangeSize - 1 < this.lastIndex ? this.rangeSize * this.range + this.rangeSize - 1 : this.lastIndex;
-    }
-
-    public boolean hasNext() {
-      return this.rowNumber < this.lastOffset();
-    }
-
-    public int getCurrentIndex() {
-      return this.currentIndex;
-    }
-
-    public Object getCurrentValue(String name) {
-      String camel = NamingUtil.snake_case2camelCase(name);
+      String camel = NamingUtil.snake_case2camelCase(fieldName);
       String getterName = "get" + Character.toUpperCase(camel.charAt(0)) + camel.substring(1);
-      
+
       Method getter;
       try {
         getter = dtoClass.getDeclaredMethod(getterName);
       } catch (NoSuchMethodException e) {
         throw new RuntimeException(e);
       }
-      
+
       Object value;
       try {
-        value = getter.invoke(this.getCurrentRecord());
+        value = getter.invoke(currentRecord);
       } catch (IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(e);
       }
       return value;
-    }
-
-    public int getColumnNumber() {
-      return this.columnNumber;
-    }
-
-    public void setColumnNumber(int columnNumber) {
-      this.columnNumber = columnNumber;
-    }
-
-    public PrintOrder getPrintOrder() {
-      return this.printOrder;
-    }
-
-    public void setPrintOrder(PrintOrder printOrder) {
-      this.printOrder = printOrder;
-    }
-
-    private void setCurrentIndexByRowNumber() {
-      if (this.printOrder == PrintOrder.VERTICAL) {
-        this.currentIndex = this.rowNumber;
-      } else {
-        int currentColumn = this.rowNumber % this.columnNumber;
-        this.currentIndex = this.rowNumber / this.columnNumber + currentColumn * this.getColumnSize();
-      }
-
-    }
-
-    private int getColumnSize() {
-      if (this.columnSize == -1) {
-        int recordListSize = this.records.size();
-        this.columnSize = recordListSize / this.columnNumber + (recordListSize % this.columnNumber == 0 ? 0 : 1);
-      }
-
-      return this.columnSize;
-    }
-
-    private void setRecords(List<?> newRecords) {
-      this.records = newRecords;
-      int recordListSize = this.records.size();
-      this.firstIndex = recordListSize > 0 ? 0 : -1;
-      this.lastIndex = recordListSize > 0 ? recordListSize - 1 : -1;
-      this.currentIndex = -1;
-    }
-
-    public enum PrintOrder {
-      VERTICAL,
-      HORIZONTAL;
     }
   }
 }
